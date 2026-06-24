@@ -20,7 +20,7 @@ class Art_Master_Install_Admin_Settings {
 	public static function init() {
 		add_action( 'admin_menu', array( __CLASS__, 'register_admin_pages' ) );
 		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
-		add_action( 'admin_init', array( __CLASS__, 'redirect_legacy_settings_url' ) );
+		add_action( 'admin_init', array( __CLASS__, 'redirect_legacy_plugins_url' ) );
 		add_filter( 'option_page_capability_art_master_install_settings_group', array( __CLASS__, 'get_settings_capability' ) );
 	}
 
@@ -48,37 +48,25 @@ class Art_Master_Install_Admin_Settings {
 	}
 
 	/**
-	 * Register catalog page under Plugins and Settings menus.
+	 * Register catalog page under Settings.
 	 */
 	public static function register_admin_pages() {
-		$page_title = __( 'Плагины Арта', 'art-master-install' );
-		$menu_title = __( 'Плагины Арта', 'art-master-install' );
-		$callback   = array( __CLASS__, 'render_catalog_page' );
-
-		add_plugins_page(
-			$page_title,
-			$menu_title,
-			'activate_plugins',
-			self::PAGE_SETTINGS,
-			$callback
-		);
-
 		add_options_page(
-			$page_title,
-			$menu_title,
+			__( 'Плагины Арта', 'art-master-install' ),
+			__( 'Плагины Арта', 'art-master-install' ),
 			'manage_options',
 			self::PAGE_SETTINGS,
-			$callback
+			array( __CLASS__, 'render_catalog_page' )
 		);
 	}
 
 	/**
-	 * Redirect old Settings URL to the Plugins submenu page.
+	 * Redirect old Plugins submenu URL to Settings.
 	 */
-	public static function redirect_legacy_settings_url() {
+	public static function redirect_legacy_plugins_url() {
 		global $pagenow;
 
-		if ( 'options-general.php' !== $pagenow ) {
+		if ( 'plugins.php' !== $pagenow ) {
 			return;
 		}
 
@@ -196,7 +184,7 @@ class Art_Master_Install_Admin_Settings {
 			array(
 				'page' => self::PAGE_SETTINGS,
 			),
-			admin_url( 'plugins.php' )
+			admin_url( 'options-general.php' )
 		);
 	}
 
@@ -207,7 +195,6 @@ class Art_Master_Install_Admin_Settings {
 	 */
 	public static function get_page_hooks() {
 		return array(
-			'plugins_page_' . self::PAGE_SETTINGS,
 			'settings_page_' . self::PAGE_SETTINGS,
 		);
 	}
