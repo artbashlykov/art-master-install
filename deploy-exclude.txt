@@ -1,0 +1,26 @@
+# Excluded from WordPress.org plugin zip (and Plugin Check when using this list).
+.git
+gitignore.template
+deploy-exclude.txt
+.github/
+.cursor/
+.idea/
+.vscode/
+*.code-workspace
+.env
+.env.*
+*.pem
+*.key
+credentials.json
+secrets.json
+.DS_Store
+Thumbs.db
+desktop.ini
+*.zip
+*.log
+node_modules/
+tmp-*.php
+local-*.php
+README.md
+scripts/
+vendor/

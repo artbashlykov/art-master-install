@@ -1,0 +1,109 @@
+.art-master-install-admin .art-master-install-panel {
+	margin-bottom: 20px;
+	padding: 16px 20px;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	background: #fff;
+	box-sizing: border-box;
+}
+
+.art-master-install-admin .art-master-install-panel > h2 {
+	margin: 0 0 12px;
+	padding: 0 0 10px;
+	border-bottom: 1px solid #dcdcde;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.art-master-install-admin .art-master-install-panel > .description {
+	margin-top: 0;
+}
+
+.art-master-install-table {
+	margin-top: 12px;
+	table-layout: fixed;
+	width: 100%;
+}
+
+.art-master-install-col-plugin,
+.art-master-install-table th:nth-child(1),
+.art-master-install-table td:nth-child(1) {
+	width: 20%;
+}
+
+.art-master-install-col-description,
+.art-master-install-table th:nth-child(2),
+.art-master-install-table td:nth-child(2) {
+	width: 40%;
+}
+
+.art-master-install-col-status,
+.art-master-install-table th:nth-child(3),
+.art-master-install-table td:nth-child(3) {
+	width: 20%;
+}
+
+.art-master-install-col-actions,
+.art-master-install-table th:nth-child(4),
+.art-master-install-table td:nth-child(4) {
+	width: 20%;
+}
+
+.art-master-install-table td {
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+}
+
+.art-master-install-actions .button {
+	margin-right: 6px;
+	margin-bottom: 4px;
+}
+
+.art-master-install-actions .description {
+	display: inline-block;
+}
+
+.art-master-install-empty {
+	padding: 24px 16px;
+	text-align: center;
+	color: #646970;
+}
+
+.art-master-install-status {
+	display: inline-block;
+	padding: 4px 10px;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.4;
+}
+
+.art-master-install-status-version {
+	display: inline-block;
+	margin-top: 6px;
+}
+
+.art-master-install-status--not-installed {
+	color: #50575e;
+	background: #f0f0f1;
+	border-color: #c3c4c7;
+}
+
+.art-master-install-status--active {
+	color: #1e4620;
+	background: #edfaef;
+	border-color: #68de7c;
+}
+
+.art-master-install-status--update {
+	color: #614200;
+	background: #fcf9e8;
+	border-color: #dba617;
+}
+
+.art-master-install-status--inactive {
+	color: #2c3338;
+	background: #f0f6fc;
+	border-color: #72aee6;
+}
