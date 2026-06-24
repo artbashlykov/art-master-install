@@ -143,20 +143,12 @@ class Art_Master_Install_Catalog_Updates {
 	 * Cron callback: refresh catalog cache and apply auto-updates when enabled.
 	 */
 	public static function run_scheduled_check() {
-		if ( ! Art_Master_Install_Settings::should_auto_update_catalog()
-			&& ! Art_Master_Install_Settings::should_auto_update_self() ) {
+		if ( ! Art_Master_Install_Settings::should_auto_update_catalog() ) {
 			self::clear_cron();
 			return;
 		}
 
-		$apply_auto = Art_Master_Install_Settings::should_auto_update_catalog()
-			|| Art_Master_Install_Settings::should_auto_update_self();
-
-		self::check_all( true, $apply_auto );
-
-		if ( Art_Master_Install_Settings::should_auto_update_self() ) {
-			Art_Master_Install_Updater::maybe_auto_update_self();
-		}
+		self::check_all( true, true );
 	}
 
 	/**

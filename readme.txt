@@ -4,7 +4,7 @@ Tags: installer, github, art, catalog
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.5.0
+Stable tag: 1.5.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -33,6 +33,9 @@ It helps you install and update ART extensions from public GitHub releases witho
 ART Starter, ART Editor, and ART LMS. More ART extensions will be added in future releases.
 
 == Changelog ==
+
+= 1.5.1 =
+* Fix: Plugin Check warning for auto-update routines (use WordPress filter instead of direct option writes).
 
 = 1.5.0 =
 * Catalog: button «Проверить обновления» with AJAX refresh from GitHub.

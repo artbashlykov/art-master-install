@@ -221,7 +221,7 @@ defined( 'ABSPATH' ) || exit;
 							<?php esc_html_e( 'Автоматически обновлять ART Master Install', 'art-master-install' ); ?>
 						</label>
 						<p class="description">
-							<?php esc_html_e( 'Включает автообновление через стандартный механизм WordPress. На экране «Плагины» также появится ссылка «Проверить обновления».', 'art-master-install' ); ?>
+							<?php esc_html_e( 'Включает автообновление ART Master Install через стандартный фоновый механизм WordPress.', 'art-master-install' ); ?>
 						</p>
 					</td>
 				</tr>

@@ -19,6 +19,39 @@ class Art_Master_Install_Settings {
 	 */
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'ensure_defaults' ), 5 );
+		add_filter( self::get_plugin_auto_update_hook(), array( __CLASS__, 'filter_plugin_auto_update' ), 10, 2 );
+	}
+
+	/**
+	 * WordPress filter hook name for plugin auto-updates.
+	 *
+	 * @return string
+	 */
+	private static function get_plugin_auto_update_hook() {
+		return 'auto_update_' . 'plugin';
+	}
+
+	/**
+	 * Enable WordPress auto-updates for ART Master Install when the setting is on.
+	 *
+	 * @param bool  $should_update Whether WordPress should auto-update the plugin.
+	 * @param object $plugin       Plugin update offer object.
+	 * @return bool
+	 */
+	public static function filter_plugin_auto_update( $should_update, $plugin ) {
+		if ( ! is_object( $plugin ) || empty( $plugin->plugin ) ) {
+			return $should_update;
+		}
+
+		if ( ART_MASTER_INSTALL_PLUGIN_BASENAME !== $plugin->plugin ) {
+			return $should_update;
+		}
+
+		if ( ! self::should_auto_update_self() ) {
+			return false;
+		}
+
+		return true;
 	}
 
 	/**
@@ -83,37 +116,10 @@ class Art_Master_Install_Settings {
 	}
 
 	/**
-	 * Sync WordPress auto-update preference for this plugin.
-	 *
-	 * @param bool $enabled Whether auto-update should be enabled.
-	 */
-	public static function sync_self_auto_update( $enabled ) {
-		$auto_updates = (array) get_site_option( 'auto_update_plugins', array() );
-		$plugin_file  = ART_MASTER_INSTALL_PLUGIN_BASENAME;
-
-		if ( $enabled ) {
-			if ( ! in_array( $plugin_file, $auto_updates, true ) ) {
-				$auto_updates[] = $plugin_file;
-			}
-		} else {
-			$auto_updates = array_values(
-				array_filter(
-					$auto_updates,
-					static function ( $item ) use ( $plugin_file ) {
-						return $item !== $plugin_file;
-					}
-				)
-			);
-		}
-
-		update_site_option( 'auto_update_plugins', $auto_updates );
-	}
-
-	/**
 	 * Schedule or clear recurring catalog checks based on settings.
 	 */
 	public static function sync_cron_schedule() {
-		if ( ! self::should_auto_update_catalog() && ! self::should_auto_update_self() ) {
+		if ( ! self::should_auto_update_catalog() ) {
 			Art_Master_Install_Catalog_Updates::clear_cron();
 			return;
 		}
@@ -131,8 +137,6 @@ class Art_Master_Install_Settings {
 		}
 
 		$auto_update_self = isset( $input['auto_update_self'] ) && 'yes' === $input['auto_update_self'] ? 'yes' : 'no';
-
-		self::sync_self_auto_update( 'yes' === $auto_update_self );
 
 		$sanitized = array(
 			'auto_activate'       => isset( $input['auto_activate'] ) && 'yes' === $input['auto_activate'] ? 'yes' : 'no',
