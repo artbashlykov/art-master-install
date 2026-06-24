@@ -4,7 +4,7 @@ Tags: installer, github, art, catalog
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.4.9
+Stable tag: 1.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -33,6 +33,13 @@ It helps you install and update ART extensions from public GitHub releases witho
 ART Starter, ART Editor, and ART LMS. More ART extensions will be added in future releases.
 
 == Changelog ==
+
+= 1.5.0 =
+* Catalog: button «Проверить обновления» with AJAX refresh from GitHub.
+* Settings: auto-update for catalog plugins and for ART Master Install.
+* Scheduled catalog update checks twice daily when auto-update is enabled.
+* ART Master Install: PUC auto-update field enabled on the Plugins screen.
+* Fix: WordPress auto-update preference sync uses the correct site option format.
 
 = 1.4.9 =
 * Catalog page is only under Settings → Плагины Арта (removed duplicate Plugins submenu).

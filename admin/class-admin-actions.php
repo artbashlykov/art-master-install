@@ -50,6 +50,19 @@ class Art_Master_Install_Admin_Actions {
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified above.
 		$slug = isset( $_POST['slug'] ) ? sanitize_key( wp_unslash( $_POST['slug'] ) ) : '';
 
+		if ( 'check_updates' === $catalog_action ) {
+			if ( ! Art_Master_Install_Security::can_view_catalog() ) {
+				wp_send_json_error(
+					array(
+						'message' => __( 'Недостаточно прав.', 'art-master-install' ),
+					),
+					403
+				);
+			}
+
+			wp_send_json_success( Art_Master_Install_Catalog_Updates::check_all( true, false ) );
+		}
+
 		if ( ! in_array( $catalog_action, array( 'install', 'update' ), true ) ) {
 			wp_send_json_error(
 				array(

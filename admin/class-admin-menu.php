@@ -39,7 +39,7 @@ class Art_Master_Install_Admin_Menu {
 			ART_MASTER_INSTALL_VERSION
 		);
 
-		if ( ! Art_Master_Install_Security::can_install() && ! Art_Master_Install_Security::can_update() ) {
+		if ( ! Art_Master_Install_Security::can_view_catalog() ) {
 			return;
 		}
 
@@ -59,18 +59,27 @@ class Art_Master_Install_Admin_Menu {
 				'ajaxAction'   => Art_Master_Install_Admin_Actions::AJAX_ACTION,
 				'nonce'        => wp_create_nonce( Art_Master_Install_Admin_Actions::AJAX_ACTION ),
 				'autoActivate' => Art_Master_Install_Settings::should_auto_activate(),
+				'canInstall'   => Art_Master_Install_Security::can_install(),
+				'canUpdate'    => Art_Master_Install_Security::can_update(),
 				'i18n'         => array(
-					'install'       => __( 'Установить', 'art-master-install' ),
-					'update'        => __( 'Обновить', 'art-master-install' ),
-					'activate'      => __( 'Активировать', 'art-master-install' ),
-					'upToDate'      => __( 'Актуальная версия', 'art-master-install' ),
-					'queued'        => __( 'В очереди…', 'art-master-install' ),
-					'installing'    => __( 'Устанавливается…', 'art-master-install' ),
-					'activating'    => __( 'Активируется…', 'art-master-install' ),
-					'updating'      => __( 'Обновляется…', 'art-master-install' ),
-					'genericError'  => __( 'Не удалось выполнить действие с плагином.', 'art-master-install' ),
+					'install'        => __( 'Установить', 'art-master-install' ),
+					'update'         => __( 'Обновить', 'art-master-install' ),
+					'activate'       => __( 'Активировать', 'art-master-install' ),
+					'upToDate'       => __( 'Актуальная версия', 'art-master-install' ),
+					'queued'         => __( 'В очереди…', 'art-master-install' ),
+					'installing'     => __( 'Устанавливается…', 'art-master-install' ),
+					'activating'     => __( 'Активируется…', 'art-master-install' ),
+					'updating'       => __( 'Обновляется…', 'art-master-install' ),
+					'checking'       => __( 'Проверяем обновления…', 'art-master-install' ),
+					'checkUpdates'   => __( 'Проверить обновления', 'art-master-install' ),
+					'genericError'   => __( 'Не удалось выполнить действие с плагином.', 'art-master-install' ),
+					'checkError'     => __( 'Не удалось проверить обновления.', 'art-master-install' ),
+					/* translators: 1: installed version, 2: latest GitHub version or dash */
+					'selfUpdateStatus' => __( 'Установленная версия: %1$s. Последний релиз на GitHub: %2$s.', 'art-master-install' ),
+					'selfUpdateAvailable' => __( 'Доступно обновление ART Master Install.', 'art-master-install' ),
+					'goToUpdates'    => __( 'Перейти к обновлениям', 'art-master-install' ),
 					/* translators: %s: plugin version */
-					'versionLabel'  => __( 'Версия: %s', 'art-master-install' ),
+					'versionLabel'   => __( 'Версия: %s', 'art-master-install' ),
 				),
 			)
 		);

@@ -272,4 +272,102 @@
 
 		enqueue( slug, action );
 	} );
+
+	function updateLastCheckLabel( label ) {
+		const element = document.getElementById( 'art-master-install-last-check' );
+		if ( element && label ) {
+			element.textContent = label;
+		}
+	}
+
+	function updateMasterUpdatePanel( masterUpdate ) {
+		const panel = document.getElementById( 'art-master-install-self-update' );
+		if ( ! panel || ! masterUpdate ) {
+			return;
+		}
+
+		const status = panel.querySelector( '.art-master-install-self-update-status' );
+		if ( status ) {
+			status.textContent = i18n.selfUpdateStatus
+				.replace( '%1$s', masterUpdate.installed_version )
+				.replace( '%2$s', masterUpdate.latest_version || '—' );
+		}
+
+		let notice = panel.querySelector( '.art-master-install-self-update-notice' );
+		if ( masterUpdate.update_available ) {
+			if ( ! notice ) {
+				notice = document.createElement( 'p' );
+				notice.className = 'art-master-install-self-update-notice';
+				panel.appendChild( notice );
+			}
+
+			notice.innerHTML = '';
+			notice.appendChild( document.createTextNode( i18n.selfUpdateAvailable + ' ' ) );
+
+			const link = document.createElement( 'a' );
+			link.href = masterUpdate.updates_url || '#';
+			link.textContent = i18n.goToUpdates;
+			notice.appendChild( link );
+		} else if ( notice ) {
+			notice.remove();
+		}
+	}
+
+	async function checkUpdates() {
+		const button = document.getElementById( 'art-master-install-check-updates' );
+		if ( ! button || button.disabled ) {
+			return;
+		}
+
+		button.disabled = true;
+		button.classList.add( 'is-busy' );
+		button.textContent = i18n.checking;
+
+		const body = new URLSearchParams();
+		body.set( 'action', config.ajaxAction );
+		body.set( 'nonce', config.nonce );
+		body.set( 'catalog_action', 'check_updates' );
+
+		try {
+			const response = await fetch( config.ajaxUrl, {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+				},
+				body: body.toString(),
+			} );
+
+			const data = await response.json();
+
+			if ( ! data || ! data.success || ! data.data ) {
+				showNotice( i18n.checkError, 'error' );
+				return;
+			}
+
+			if ( Array.isArray( data.data.items ) ) {
+				data.data.items.forEach( function ( item ) {
+					applyPayload( item );
+				} );
+			}
+
+			updateLastCheckLabel( data.data.last_checked );
+			updateMasterUpdatePanel( data.data.master_update );
+			showNotice( data.data.message, data.data.updates_count > 0 ? 'warning' : 'success' );
+		} catch ( error ) {
+			showNotice( i18n.checkError, 'error' );
+		} finally {
+			button.disabled = false;
+			button.classList.remove( 'is-busy' );
+			button.textContent = i18n.checkUpdates;
+		}
+	}
+
+	const checkButton = document.getElementById( 'art-master-install-check-updates' );
+	if ( checkButton ) {
+		checkButton.addEventListener( 'click', function ( event ) {
+			event.preventDefault();
+			checkUpdates();
+		} );
+	}
 }() );

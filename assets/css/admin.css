@@ -15,6 +15,55 @@
 	font-weight: 600;
 }
 
+.art-master-install-panel-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 12px;
+	padding-bottom: 10px;
+	border-bottom: 1px solid #dcdcde;
+}
+
+.art-master-install-panel-head > h2 {
+	margin: 0;
+	padding: 0;
+	border-bottom: 0;
+}
+
+.art-master-install-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px;
+}
+
+.art-master-install-last-check {
+	margin: 0;
+}
+
+#art-master-install-check-updates.is-busy {
+	opacity: 0.7;
+	cursor: wait;
+}
+
+.art-master-install-self-update {
+	margin: 0 0 16px;
+	padding: 12px 14px;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	background: #f6f7f7;
+}
+
+.art-master-install-self-update p {
+	margin: 0 0 8px;
+}
+
+.art-master-install-self-update p:last-child {
+	margin-bottom: 0;
+}
+
 .art-master-install-admin .art-master-install-panel > .description {
 	margin-top: 0;
 }

@@ -50,6 +50,7 @@ class Art_Master_Install_Updater {
 
 		$checker->addFilter( 'view_details_link', '__return_empty_string' );
 		$checker->addFilter( 'request_info_options', array( __CLASS__, 'filter_api_request_options' ) );
+		$checker->allowAutoupdateField();
 
 		$checker->getVcsApi()->enableReleaseAssets( '/\.zip($|[?&#])/i' );
 
@@ -137,5 +138,85 @@ class Art_Master_Install_Updater {
 		$interval = (int) apply_filters( 'art_master_install_update_check_interval', self::CHECK_INTERVAL );
 
 		return max( self::CHECK_INTERVAL_MIN, $interval );
+	}
+
+	/**
+	 * Force a GitHub update check for ART Master Install.
+	 *
+	 * @return bool Whether a newer version was found.
+	 */
+	public static function force_check() {
+		if ( null === self::$checker ) {
+			return false;
+		}
+
+		self::$checker->checkForUpdates();
+		self::mark_checked();
+
+		return self::has_update_available();
+	}
+
+	/**
+	 * Whether a newer release of ART Master Install is available.
+	 *
+	 * @return bool
+	 */
+	public static function has_update_available() {
+		if ( null === self::$checker ) {
+			return false;
+		}
+
+		$update = self::$checker->getUpdate();
+
+		return null !== $update;
+	}
+
+	/**
+	 * Build update state for the catalog admin UI.
+	 *
+	 * @param bool $force_refresh Whether to bypass cached GitHub release data.
+	 * @return array<string, mixed>
+	 */
+	public static function get_self_update_state( $force_refresh = false ) {
+		$installed_version = ART_MASTER_INSTALL_VERSION;
+		$latest_version    = Art_Master_Install_Github::get_latest_version( self::GITHUB_REPO, $force_refresh );
+		$update_available  = '' !== $latest_version
+			&& version_compare( $installed_version, $latest_version, '<' );
+
+		if ( $force_refresh ) {
+			self::force_check();
+			$update_available = self::has_update_available() || $update_available;
+		}
+
+		return array(
+			'installed_version' => $installed_version,
+			'latest_version'    => $latest_version,
+			'update_available'  => $update_available,
+			'updates_url'       => admin_url( 'update-core.php' ),
+		);
+	}
+
+	/**
+	 * Run WordPress plugin update for ART Master Install when auto-update is enabled.
+	 */
+	public static function maybe_auto_update_self() {
+		if ( ! Art_Master_Install_Settings::should_auto_update_self() ) {
+			return;
+		}
+
+		self::force_check();
+
+		if ( ! self::has_update_available() ) {
+			return;
+		}
+
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+		require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
+
+		$skin     = new Automatic_Upgrader_Skin();
+		$upgrader = new Plugin_Upgrader( $skin );
+		$upgrader->upgrade( ART_MASTER_INSTALL_PLUGIN_BASENAME );
 	}
 }

@@ -25,7 +25,17 @@ defined( 'ABSPATH' ) || exit;
 	<?php endif; ?>
 
 	<div class="art-master-install-panel" style="margin-top:10px;">
-		<h2><?php esc_html_e( 'Доступные плагины', 'art-master-install' ); ?></h2>
+		<div class="art-master-install-panel-head">
+			<h2><?php esc_html_e( 'Доступные плагины', 'art-master-install' ); ?></h2>
+			<div class="art-master-install-toolbar">
+				<p class="description art-master-install-last-check" id="art-master-install-last-check">
+					<?php echo esc_html( $last_check_label ); ?>
+				</p>
+				<button type="button" class="button" id="art-master-install-check-updates">
+					<?php esc_html_e( 'Проверить обновления', 'art-master-install' ); ?>
+				</button>
+			</div>
+		</div>
 
 		<table class="widefat striped art-master-install-table" role="presentation">
 			<colgroup>
@@ -136,6 +146,33 @@ defined( 'ABSPATH' ) || exit;
 	<?php if ( Art_Master_Install_Security::can_install() ) : ?>
 	<div class="art-master-install-panel">
 		<h2><?php esc_html_e( 'Настройки', 'art-master-install' ); ?></h2>
+
+		<div class="art-master-install-self-update" id="art-master-install-self-update">
+			<p>
+				<strong><?php esc_html_e( 'ART Master Install', 'art-master-install' ); ?></strong>
+			</p>
+			<p class="description art-master-install-self-update-status">
+				<?php
+				printf(
+					/* translators: 1: installed version, 2: latest GitHub version or dash */
+					esc_html__( 'Установленная версия: %1$s. Последний релиз на GitHub: %2$s.', 'art-master-install' ),
+					esc_html( (string) $master_update['installed_version'] ),
+					'' !== (string) $master_update['latest_version']
+						? esc_html( (string) $master_update['latest_version'] )
+						: '—'
+				);
+				?>
+			</p>
+			<?php if ( ! empty( $master_update['update_available'] ) ) : ?>
+				<p class="art-master-install-self-update-notice">
+					<?php esc_html_e( 'Доступно обновление ART Master Install.', 'art-master-install' ); ?>
+					<a href="<?php echo esc_url( (string) $master_update['updates_url'] ); ?>">
+						<?php esc_html_e( 'Перейти к обновлениям', 'art-master-install' ); ?>
+					</a>
+				</p>
+			<?php endif; ?>
+		</div>
+
 		<form method="post" action="options.php" class="art-master-install-settings-form">
 			<?php settings_fields( 'art_master_install_settings_group' ); ?>
 			<table class="form-table" role="presentation">
@@ -154,6 +191,37 @@ defined( 'ABSPATH' ) || exit;
 						</label>
 						<p class="description">
 							<?php esc_html_e( 'После установки из каталога плагин сразу включается без перехода на экран «Плагины».', 'art-master-install' ); ?>
+						</p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Обновления', 'art-master-install' ); ?></th>
+					<td>
+						<label for="art_master_install_auto_update_catalog">
+							<input
+								type="checkbox"
+								id="art_master_install_auto_update_catalog"
+								name="<?php echo esc_attr( Art_Master_Install_Settings::OPTION ); ?>[auto_update_catalog]"
+								value="yes"
+								<?php checked( Art_Master_Install_Settings::should_auto_update_catalog() ); ?>
+							>
+							<?php esc_html_e( 'Автоматически обновлять плагины из каталога', 'art-master-install' ); ?>
+						</label>
+						<p class="description">
+							<?php esc_html_e( 'ART Master Install будет проверять GitHub два раза в сутки и устанавливать новые версии установленных плагинов каталога.', 'art-master-install' ); ?>
+						</p>
+						<label for="art_master_install_auto_update_self">
+							<input
+								type="checkbox"
+								id="art_master_install_auto_update_self"
+								name="<?php echo esc_attr( Art_Master_Install_Settings::OPTION ); ?>[auto_update_self]"
+								value="yes"
+								<?php checked( Art_Master_Install_Settings::should_auto_update_self() ); ?>
+							>
+							<?php esc_html_e( 'Автоматически обновлять ART Master Install', 'art-master-install' ); ?>
+						</label>
+						<p class="description">
+							<?php esc_html_e( 'Включает автообновление через стандартный механизм WordPress. На экране «Плагины» также появится ссылка «Проверить обновления».', 'art-master-install' ); ?>
 						</p>
 					</td>
 				</tr>

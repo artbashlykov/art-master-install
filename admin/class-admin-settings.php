@@ -90,6 +90,8 @@ class Art_Master_Install_Admin_Settings {
 		}
 
 		$catalog_items = Art_Master_Install_Catalog::get_all_states( false );
+		$last_check_label = Art_Master_Install_Catalog_Updates::get_last_check_label();
+		$master_update    = Art_Master_Install_Updater::get_self_update_state( false );
 
 		include ART_MASTER_INSTALL_PLUGIN_DIR . 'admin/views/page-plugins.php';
 	}

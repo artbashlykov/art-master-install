@@ -16,6 +16,7 @@ class Art_Master_Install_Deactivator {
 	 * Run on plugin deactivation.
 	 */
 	public static function deactivate() {
-		// Reserved for future cleanup.
+		require_once ART_MASTER_INSTALL_PLUGIN_DIR . 'includes/class-catalog-updates.php';
+		Art_Master_Install_Catalog_Updates::clear_cron();
 	}
 }
