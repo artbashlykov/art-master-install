@@ -69,6 +69,7 @@ class Art_Master_Install_Admin_Menu {
 					'activating'    => __( 'Активируется…', 'art-master-install' ),
 					'updating'      => __( 'Обновляется…', 'art-master-install' ),
 					'genericError'  => __( 'Не удалось выполнить действие с плагином.', 'art-master-install' ),
+					/* translators: %s: plugin version */
 					'versionLabel'  => __( 'Версия: %s', 'art-master-install' ),
 				),
 			)
