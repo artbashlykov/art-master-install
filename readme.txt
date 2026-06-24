@@ -4,7 +4,7 @@ Tags: installer, github, art, catalog
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.4.6
+Stable tag: 1.4.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,13 +14,13 @@ Install and manage ART WordPress extensions from public GitHub repositories.
 
 ART Master Install is a hub for installing and updating other ART extensions from public GitHub repositories.
 
-Open **Settings → Плагины Арта** to install or update ART Starter, ART Editor, and other catalog items in one click from GitHub releases.
+Open **Plugins → Плагины Арта** (or **Settings → Плагины Арта**) to install or update ART Starter, ART Editor, and other catalog items in one click from GitHub releases.
 
 == Installation ==
 
 1. Upload the `art-master-install` folder to `/wp-content/plugins/` or install through the WordPress admin.
 2. Activate ART Master Install on the Plugins screen.
-3. Open **Settings → Плагины Арта** in the admin to view the catalog.
+3. Open **Plugins → Плагины Арта** in the admin to view the catalog.
 
 == Frequently Asked Questions ==
 
@@ -33,6 +33,12 @@ It helps you install and update ART extensions from public GitHub releases witho
 ART Starter, ART Editor, and ART LMS. More ART extensions will be added in future releases.
 
 == Changelog ==
+
+= 1.4.8 =
+* Fix: GitHub update checks send User-Agent and Accept headers (fixes HTTP 403 from GitHub API).
+
+= 1.4.7 =
+* Fix: admin menu and catalog page register before admin_menu (fixes missing menu item and access denied).
 
 = 1.4.6 =
 * Catalog page is under Plugins → Плагины Арта (primary) and Settings → Плагины Арта.

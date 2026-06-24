@@ -49,10 +49,11 @@ class Art_Master_Install_Updater {
 		);
 
 		$checker->addFilter( 'view_details_link', '__return_empty_string' );
+		$checker->addFilter( 'request_info_options', array( __CLASS__, 'filter_api_request_options' ) );
 
 		$checker->getVcsApi()->enableReleaseAssets( '/\.zip($|[?&#])/i' );
 
-		$token = self::get_github_token();
+		$token = Art_Master_Install_Github::get_access_token();
 
 		if ( '' !== $token ) {
 			$checker->setAuthentication( $token );
@@ -62,6 +63,26 @@ class Art_Master_Install_Updater {
 
 		add_action( 'load-plugins.php', array( __CLASS__, 'maybe_check_for_updates' ), 99 );
 		add_action( 'load-update-core.php', array( __CLASS__, 'maybe_check_for_updates' ), 99 );
+	}
+
+	/**
+	 * Add GitHub-required headers to Plugin Update Checker API requests.
+	 *
+	 * @param array<string, mixed> $options wp_remote_get() options.
+	 * @return array<string, mixed>
+	 */
+	public static function filter_api_request_options( $options ) {
+		if ( ! is_array( $options ) ) {
+			$options = array();
+		}
+
+		if ( ! isset( $options['headers'] ) || ! is_array( $options['headers'] ) ) {
+			$options['headers'] = array();
+		}
+
+		$options['headers'] = array_merge( $options['headers'], Art_Master_Install_Github::get_api_headers() );
+
+		return $options;
 	}
 
 	/**
@@ -116,30 +137,5 @@ class Art_Master_Install_Updater {
 		$interval = (int) apply_filters( 'art_master_install_update_check_interval', self::CHECK_INTERVAL );
 
 		return max( self::CHECK_INTERVAL_MIN, $interval );
-	}
-
-	/**
-	 * GitHub token for private repository access.
-	 *
-	 * Add to wp-config.php on sites that should receive updates:
-	 * define( 'ART_MASTER_INSTALL_GITHUB_TOKEN', 'your-github-token' );
-	 *
-	 * @return string
-	 */
-	private static function get_github_token() {
-		$token = '';
-
-		if ( defined( 'ART_MASTER_INSTALL_GITHUB_TOKEN' ) ) {
-			$token = (string) ART_MASTER_INSTALL_GITHUB_TOKEN;
-		}
-
-		/**
-		 * Filters GitHub token used to check ART Master Install updates.
-		 *
-		 * @param string $token GitHub personal access token.
-		 */
-		$token = (string) apply_filters( 'art_master_install_github_token', $token );
-
-		return sanitize_text_field( $token );
 	}
 }

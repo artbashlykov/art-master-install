@@ -65,11 +65,14 @@ class Art_Master_Install_Plugin {
 	 */
 	public function run() {
 		add_action( 'init', array( 'Art_Master_Install_Settings', 'init' ) );
-		add_action( 'admin_init', array( $this, 'init_admin' ) );
+
+		if ( is_admin() ) {
+			$this->init_admin();
+		}
 	}
 
 	/**
-	 * Initialize admin modules.
+	 * Initialize admin modules (must run before admin_menu).
 	 */
 	public function init_admin() {
 		if ( self::$admin_initialized ) {

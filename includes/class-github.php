@@ -16,6 +16,51 @@ class Art_Master_Install_Github {
 	const CACHE_TTL_FAILURE = 900; // 15 minutes.
 
 	/**
+	 * GitHub personal access token (optional, raises API rate limits).
+	 *
+	 * Add to wp-config.php:
+	 * define( 'ART_MASTER_INSTALL_GITHUB_TOKEN', 'your-github-token' );
+	 *
+	 * @return string
+	 */
+	public static function get_access_token() {
+		$token = '';
+
+		if ( defined( 'ART_MASTER_INSTALL_GITHUB_TOKEN' ) ) {
+			$token = (string) ART_MASTER_INSTALL_GITHUB_TOKEN;
+		}
+
+		/**
+		 * Filters GitHub token used for ART Master Install API requests.
+		 *
+		 * @param string $token GitHub personal access token.
+		 */
+		$token = (string) apply_filters( 'art_master_install_github_token', $token );
+
+		return sanitize_text_field( $token );
+	}
+
+	/**
+	 * HTTP headers required by the GitHub REST API.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function get_api_headers() {
+		$headers = array(
+			'Accept'     => 'application/vnd.github+json',
+			'User-Agent' => 'ART-Master-Install/' . ART_MASTER_INSTALL_VERSION,
+		);
+
+		$token = self::get_access_token();
+
+		if ( '' !== $token ) {
+			$headers['Authorization'] = 'Bearer ' . $token;
+		}
+
+		return $headers;
+	}
+
+	/**
 	 * @param string $github_repo Owner/repo.
 	 * @param string $zip_name    Release asset file name.
 	 * @return string
@@ -82,10 +127,7 @@ class Art_Master_Install_Github {
 			sprintf( 'https://api.github.com/repos/%s/releases/latest', $github_repo ),
 			array(
 				'timeout' => 15,
-				'headers' => array(
-					'Accept'     => 'application/vnd.github+json',
-					'User-Agent' => 'ART-Master-Install/' . ART_MASTER_INSTALL_VERSION,
-				),
+				'headers' => self::get_api_headers(),
 			)
 		);
 
