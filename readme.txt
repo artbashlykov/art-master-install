@@ -4,7 +4,7 @@ Tags: installer, github, art, catalog
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.4.5
+Stable tag: 1.4.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -33,6 +33,10 @@ It helps you install and update ART extensions from public GitHub releases witho
 ART Starter, ART Editor, and ART LMS. More ART extensions will be added in future releases.
 
 == Changelog ==
+
+= 1.4.6 =
+* Catalog page is under Plugins → Плагины Арта (primary) and Settings → Плагины Арта.
+* Old options-general.php URL redirects to plugins.php automatically.
 
 = 1.4.5 =
 * Fix: catalog page under Settings uses manage_options again (fixes access denied on multisite and similar setups).

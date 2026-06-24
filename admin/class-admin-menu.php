@@ -28,7 +28,7 @@ class Art_Master_Install_Admin_Menu {
 	 * @param string $hook Current admin page hook.
 	 */
 	public static function enqueue_assets( $hook ) {
-		if ( 'settings_page_' . Art_Master_Install_Admin_Settings::PAGE_SETTINGS !== $hook ) {
+		if ( ! in_array( $hook, Art_Master_Install_Admin_Settings::get_page_hooks(), true ) ) {
 			return;
 		}
 

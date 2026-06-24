@@ -215,7 +215,7 @@ class Art_Master_Install_Admin_Actions {
 			$args['art-master-install-message'] = rawurlencode( $message );
 		}
 
-		wp_safe_redirect( add_query_arg( $args, admin_url( 'options-general.php' ) ) );
+		wp_safe_redirect( add_query_arg( $args, Art_Master_Install_Admin_Settings::get_page_url() ) );
 		exit;
 	}
 

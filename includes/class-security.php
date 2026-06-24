@@ -18,7 +18,7 @@ class Art_Master_Install_Security {
 	 * @return bool
 	 */
 	public static function can_view_catalog() {
-		return current_user_can( 'manage_options' );
+		return current_user_can( 'activate_plugins' ) || current_user_can( 'manage_options' );
 	}
 
 	/**
