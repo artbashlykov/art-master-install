@@ -55,12 +55,9 @@ class Art_Master_Install_Plugin {
 		require_once ART_MASTER_INSTALL_PLUGIN_DIR . 'includes/class-catalog-ui.php';
 		require_once ART_MASTER_INSTALL_PLUGIN_DIR . 'includes/class-installer.php';
 		require_once ART_MASTER_INSTALL_PLUGIN_DIR . 'includes/class-updater.php';
-
-		if ( is_admin() ) {
-			require_once ART_MASTER_INSTALL_PLUGIN_DIR . 'admin/class-admin-settings.php';
-			require_once ART_MASTER_INSTALL_PLUGIN_DIR . 'admin/class-admin-menu.php';
-			require_once ART_MASTER_INSTALL_PLUGIN_DIR . 'admin/class-admin-actions.php';
-		}
+		require_once ART_MASTER_INSTALL_PLUGIN_DIR . 'admin/class-admin-settings.php';
+		require_once ART_MASTER_INSTALL_PLUGIN_DIR . 'admin/class-admin-menu.php';
+		require_once ART_MASTER_INSTALL_PLUGIN_DIR . 'admin/class-admin-actions.php';
 	}
 
 	/**
@@ -68,14 +65,14 @@ class Art_Master_Install_Plugin {
 	 */
 	public function run() {
 		add_action( 'init', array( 'Art_Master_Install_Settings', 'init' ) );
-		$this->init_admin();
+		add_action( 'admin_init', array( $this, 'init_admin' ) );
 	}
 
 	/**
 	 * Initialize admin modules.
 	 */
 	public function init_admin() {
-		if ( self::$admin_initialized || ! is_admin() ) {
+		if ( self::$admin_initialized ) {
 			return;
 		}
 

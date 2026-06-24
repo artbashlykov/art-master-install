@@ -15,13 +15,14 @@ class Art_Master_Install_Updater {
 	const GITHUB_REPO = 'artbashlykov/art-master-install';
 
 	/**
+	 * @var object|null
+	 */
+	private static $checker = null;
+
+	/**
 	 * Register update checker.
 	 */
 	public static function init() {
-		if ( ! is_admin() ) {
-			return;
-		}
-
 		$library = ART_MASTER_INSTALL_PLUGIN_DIR . 'vendor/' . 'plugin-' . 'update-checker' . '/' . 'plugin-' . 'update-checker.php';
 
 		if ( ! file_exists( $library ) ) {
@@ -46,13 +47,29 @@ class Art_Master_Install_Updater {
 
 		$checker->addFilter( 'view_details_link', '__return_empty_string' );
 
-		$checker->getVcsApi()->enableReleaseAssets();
+		$checker->getVcsApi()->enableReleaseAssets( '/\.zip($|[?&#])/i' );
 
 		$token = self::get_github_token();
 
 		if ( '' !== $token ) {
 			$checker->setAuthentication( $token );
 		}
+
+		self::$checker = $checker;
+
+		add_action( 'load-plugins.php', array( __CLASS__, 'check_for_updates' ), 99 );
+		add_action( 'load-update-core.php', array( __CLASS__, 'check_for_updates' ), 99 );
+	}
+
+	/**
+	 * Force a GitHub update check on key admin screens.
+	 */
+	public static function check_for_updates() {
+		if ( null === self::$checker || ! Art_Master_Install_Security::can_update() ) {
+			return;
+		}
+
+		self::$checker->checkForUpdates();
 	}
 
 	/**
