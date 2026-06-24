@@ -108,6 +108,35 @@
 	border-color: #72aee6;
 }
 
+.art-master-install-status--pending {
+	color: #614200;
+	background: #fcf9e8;
+	border-color: #dba617;
+}
+
+.art-master-install-status--pending .art-master-install-spinner {
+	float: none;
+	margin: 0 4px 0 0;
+	vertical-align: text-bottom;
+}
+
+.art-master-install-row.is-busy .art-master-install-action {
+	opacity: 0.65;
+	cursor: wait;
+}
+
+.art-master-install-notices {
+	margin: 0 0 10px;
+}
+
+.art-master-install-notices:empty {
+	display: none;
+}
+
+.art-master-install-inline-notice {
+	margin: 0 0 8px;
+}
+
 .art-master-install-settings-form .form-table {
 	margin-top: 0;
 }

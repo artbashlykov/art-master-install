@@ -52,6 +52,7 @@ class Art_Master_Install_Plugin {
 		require_once ART_MASTER_INSTALL_PLUGIN_DIR . 'includes/class-security.php';
 		require_once ART_MASTER_INSTALL_PLUGIN_DIR . 'includes/class-github.php';
 		require_once ART_MASTER_INSTALL_PLUGIN_DIR . 'includes/class-catalog.php';
+		require_once ART_MASTER_INSTALL_PLUGIN_DIR . 'includes/class-catalog-ui.php';
 		require_once ART_MASTER_INSTALL_PLUGIN_DIR . 'includes/class-installer.php';
 		require_once ART_MASTER_INSTALL_PLUGIN_DIR . 'includes/class-updater.php';
 

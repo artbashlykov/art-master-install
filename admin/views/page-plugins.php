@@ -13,6 +13,8 @@ defined( 'ABSPATH' ) || exit;
 <div class="wrap art-master-install-admin">
 	<h1><?php esc_html_e( 'Плагины Арта', 'art-master-install' ); ?></h1>
 
+	<div id="art-master-install-notices" class="art-master-install-notices" aria-live="polite"></div>
+
 	<?php Art_Master_Install_Admin_Settings::render_notices(); ?>
 	<?php Art_Master_Install_Admin_Settings::render_settings_saved_notice(); ?>
 
@@ -43,7 +45,15 @@ defined( 'ABSPATH' ) || exit;
 					</tr>
 				<?php else : ?>
 					<?php foreach ( $catalog_items as $catalog_item ) : ?>
-						<tr>
+						<?php
+						$status_badge = Art_Master_Install_Catalog_UI::get_status_badge( $catalog_item );
+						$actions        = Art_Master_Install_Catalog_UI::get_actions_config( $catalog_item );
+						?>
+						<tr
+							class="art-master-install-row"
+							data-slug="<?php echo esc_attr( (string) $catalog_item['slug'] ); ?>"
+							data-status="<?php echo esc_attr( (string) $catalog_item['status'] ); ?>"
+						>
 							<td>
 								<strong><?php echo esc_html( (string) $catalog_item['name'] ); ?></strong>
 								<?php if ( ! empty( $catalog_item['latest_version'] ) ) : ?>
@@ -60,32 +70,9 @@ defined( 'ABSPATH' ) || exit;
 								<?php endif; ?>
 							</td>
 							<td><?php echo esc_html( (string) $catalog_item['description'] ); ?></td>
-							<td>
-								<?php
-								$status_class = 'art-master-install-status art-master-install-status--inactive';
-
-								if ( 'not_installed' === $catalog_item['status'] ) {
-									$status_class = 'art-master-install-status art-master-install-status--not-installed';
-									$status_label = __( 'Не установлен', 'art-master-install' );
-								} elseif ( 'active' === $catalog_item['status'] ) {
-									if ( ! empty( $catalog_item['update_available'] ) ) {
-										$status_class = 'art-master-install-status art-master-install-status--update';
-										$status_label = __( 'Активен, доступно обновление', 'art-master-install' );
-									} else {
-										$status_class = 'art-master-install-status art-master-install-status--active';
-										$status_label = __( 'Активен', 'art-master-install' );
-									}
-								} else {
-									if ( ! empty( $catalog_item['update_available'] ) ) {
-										$status_class = 'art-master-install-status art-master-install-status--update';
-										$status_label = __( 'Установлен, доступно обновление', 'art-master-install' );
-									} else {
-										$status_label = __( 'Установлен, не активен', 'art-master-install' );
-									}
-								}
-								?>
-								<span class="<?php echo esc_attr( $status_class ); ?>">
-									<?php echo esc_html( $status_label ); ?>
+							<td class="art-master-install-status-cell">
+								<span class="<?php echo esc_attr( $status_badge['class'] ); ?> art-master-install-status-badge">
+									<?php echo esc_html( $status_badge['label'] ); ?>
 								</span>
 
 								<?php if ( ! empty( $catalog_item['installed_version'] ) ) : ?>
@@ -101,26 +88,36 @@ defined( 'ABSPATH' ) || exit;
 								<?php endif; ?>
 							</td>
 							<td class="art-master-install-actions">
-								<?php if ( 'not_installed' === $catalog_item['status'] ) : ?>
-									<a class="button button-primary" href="<?php echo esc_url( Art_Master_Install_Admin_Actions::get_install_url( (string) $catalog_item['slug'] ) ); ?>">
+								<?php if ( ! empty( $actions['install'] ) ) : ?>
+									<button
+										type="button"
+										class="button button-primary art-master-install-action"
+										data-action="install"
+										data-slug="<?php echo esc_attr( (string) $catalog_item['slug'] ); ?>"
+									>
 										<?php esc_html_e( 'Установить', 'art-master-install' ); ?>
+									</button>
+								<?php endif; ?>
+
+								<?php if ( ! empty( $actions['update'] ) ) : ?>
+									<button
+										type="button"
+										class="button button-primary art-master-install-action"
+										data-action="update"
+										data-slug="<?php echo esc_attr( (string) $catalog_item['slug'] ); ?>"
+									>
+										<?php esc_html_e( 'Обновить', 'art-master-install' ); ?>
+									</button>
+								<?php endif; ?>
+
+								<?php if ( ! empty( $actions['activate'] ) ) : ?>
+									<a class="button" href="<?php echo esc_url( Art_Master_Install_Admin_Actions::get_activate_url( (string) $catalog_item['plugin_file'] ) ); ?>">
+										<?php esc_html_e( 'Активировать', 'art-master-install' ); ?>
 									</a>
-								<?php else : ?>
-									<?php if ( ! empty( $catalog_item['update_available'] ) ) : ?>
-										<a class="button button-primary" href="<?php echo esc_url( Art_Master_Install_Admin_Actions::get_update_url( (string) $catalog_item['slug'] ) ); ?>">
-											<?php esc_html_e( 'Обновить', 'art-master-install' ); ?>
-										</a>
-									<?php endif; ?>
+								<?php endif; ?>
 
-									<?php if ( 'inactive' === $catalog_item['status'] ) : ?>
-										<a class="button" href="<?php echo esc_url( Art_Master_Install_Admin_Actions::get_activate_url( (string) $catalog_item['plugin_file'] ) ); ?>">
-											<?php esc_html_e( 'Активировать', 'art-master-install' ); ?>
-										</a>
-									<?php endif; ?>
-
-									<?php if ( empty( $catalog_item['update_available'] ) && 'active' === $catalog_item['status'] ) : ?>
-										<span class="description"><?php esc_html_e( 'Актуальная версия', 'art-master-install' ); ?></span>
-									<?php endif; ?>
+								<?php if ( ! empty( $actions['up_to_date'] ) ) : ?>
+									<span class="description"><?php esc_html_e( 'Актуальная версия', 'art-master-install' ); ?></span>
 								<?php endif; ?>
 							</td>
 						</tr>

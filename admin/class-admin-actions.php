@@ -14,6 +14,7 @@ class Art_Master_Install_Admin_Actions {
 
 	const ACTION_INSTALL = 'art_master_install_catalog_install';
 	const ACTION_UPDATE  = 'art_master_install_catalog_update';
+	const AJAX_ACTION    = 'art_master_install_catalog_action';
 
 	/**
 	 * Register hooks.
@@ -21,6 +22,7 @@ class Art_Master_Install_Admin_Actions {
 	public static function init() {
 		add_action( 'admin_post_' . self::ACTION_INSTALL, array( __CLASS__, 'handle_install' ) );
 		add_action( 'admin_post_' . self::ACTION_UPDATE, array( __CLASS__, 'handle_update' ) );
+		add_action( 'wp_ajax_' . self::AJAX_ACTION, array( __CLASS__, 'handle_ajax' ) );
 	}
 
 	/**
@@ -35,6 +37,42 @@ class Art_Master_Install_Admin_Actions {
 	 */
 	public static function handle_update() {
 		self::handle_package_action( true );
+	}
+
+	/**
+	 * AJAX install/update without page reload.
+	 */
+	public static function handle_ajax() {
+		check_ajax_referer( self::AJAX_ACTION, 'nonce' );
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified above.
+		$catalog_action = isset( $_POST['catalog_action'] ) ? sanitize_key( wp_unslash( $_POST['catalog_action'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified above.
+		$slug = isset( $_POST['slug'] ) ? sanitize_key( wp_unslash( $_POST['slug'] ) ) : '';
+
+		if ( ! in_array( $catalog_action, array( 'install', 'update' ), true ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Неизвестное действие каталога.', 'art-master-install' ),
+				),
+				400
+			);
+		}
+
+		$overwrite = ( 'update' === $catalog_action );
+		$result    = self::process_catalog_action( $slug, $overwrite );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error(
+				array(
+					'message' => $result->get_error_message(),
+					'slug'    => $slug,
+				),
+				400
+			);
+		}
+
+		wp_send_json_success( $result );
 	}
 
 	/**
@@ -55,24 +93,61 @@ class Art_Master_Install_Admin_Actions {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Verified above.
 		$slug = isset( $_GET['slug'] ) ? sanitize_key( wp_unslash( $_GET['slug'] ) ) : '';
 
+		$result = self::process_catalog_action( $slug, $overwrite );
+
+		if ( is_wp_error( $result ) ) {
+			self::redirect_with_result( 'error', $slug, $result->get_error_message() );
+		}
+
+		self::redirect_with_result( $result['result'], $slug );
+	}
+
+	/**
+	 * Run install or update for a catalog slug.
+	 *
+	 * @param string $slug      Catalog slug.
+	 * @param bool   $overwrite Whether to overwrite an existing package.
+	 * @return array<string, mixed>|WP_Error
+	 */
+	private static function process_catalog_action( $slug, $overwrite ) {
+		$allowed = $overwrite
+			? Art_Master_Install_Security::can_update()
+			: Art_Master_Install_Security::can_install();
+
+		if ( ! $allowed ) {
+			return new WP_Error(
+				'art_master_install_forbidden',
+				__( 'Недостаточно прав.', 'art-master-install' )
+			);
+		}
+
 		if ( '' === $slug || null === Art_Master_Install_Catalog::get_item( $slug ) ) {
-			self::redirect_with_result( 'error', $slug, __( 'Неизвестный плагин каталога.', 'art-master-install' ) );
+			return new WP_Error(
+				'art_master_install_unknown_slug',
+				__( 'Неизвестный плагин каталога.', 'art-master-install' )
+			);
 		}
 
 		$item_state = Art_Master_Install_Catalog::get_item_state( $slug, false );
 
 		if ( $overwrite ) {
 			if ( null === $item_state || empty( $item_state['is_installed'] ) ) {
-				self::redirect_with_result( 'error', $slug, __( 'Плагин не установлен — обновление невозможно.', 'art-master-install' ) );
+				return new WP_Error(
+					'art_master_install_not_installed',
+					__( 'Плагин не установлен — обновление невозможно.', 'art-master-install' )
+				);
 			}
 		} elseif ( null !== $item_state && ! empty( $item_state['is_installed'] ) ) {
-			self::redirect_with_result( 'error', $slug, __( 'Плагин уже установлен.', 'art-master-install' ) );
+			return new WP_Error(
+				'art_master_install_already_installed',
+				__( 'Плагин уже установлен.', 'art-master-install' )
+			);
 		}
 
-		$result = Art_Master_Install_Installer::install_from_github( $slug, $overwrite );
+		$install_result = Art_Master_Install_Installer::install_from_github( $slug, $overwrite );
 
-		if ( is_wp_error( $result ) ) {
-			self::redirect_with_result( 'error', $slug, $result->get_error_message() );
+		if ( is_wp_error( $install_result ) ) {
+			return $install_result;
 		}
 
 		$item = Art_Master_Install_Catalog::get_item( $slug );
@@ -80,11 +155,48 @@ class Art_Master_Install_Admin_Actions {
 			Art_Master_Install_Github::clear_release_cache( (string) $item['github'] );
 		}
 
-		if ( $overwrite ) {
-			self::redirect_with_result( 'updated', $slug );
+		$fresh_state = Art_Master_Install_Catalog::get_item_state( $slug, true );
+		if ( null === $fresh_state ) {
+			return new WP_Error(
+				'art_master_install_state_failed',
+				__( 'Не удалось получить состояние плагина после установки.', 'art-master-install' )
+			);
 		}
 
-		self::redirect_with_result( 'installed_activated' === $result ? 'installed_activated' : 'installed', $slug );
+		$result_code = 'installed';
+		$message     = sprintf(
+			/* translators: %s: plugin name */
+			__( 'Плагин «%s» установлен из GitHub.', 'art-master-install' ),
+			(string) $fresh_state['name']
+		);
+
+		if ( $overwrite ) {
+			$result_code = 'updated';
+			$message     = sprintf(
+				/* translators: %s: plugin name */
+				__( 'Плагин «%s» обновлён из GitHub.', 'art-master-install' ),
+				(string) $fresh_state['name']
+			);
+		} elseif ( 'installed_activated' === $install_result ) {
+			$result_code = 'installed_activated';
+			$message     = sprintf(
+				/* translators: %s: plugin name */
+				__( 'Плагин «%s» установлен и активирован.', 'art-master-install' ),
+				(string) $fresh_state['name']
+			);
+		}
+
+		$payload = Art_Master_Install_Catalog_UI::get_client_payload( $fresh_state );
+
+		if ( ! empty( $payload['actions']['activate'] ) ) {
+			$payload['activate_url'] = self::get_activate_url( (string) $fresh_state['plugin_file'] );
+		}
+
+		return array(
+			'result'  => $result_code,
+			'message' => $message,
+			'state'   => $payload,
+		);
 	}
 
 	/**
@@ -94,9 +206,9 @@ class Art_Master_Install_Admin_Actions {
 	 */
 	private static function redirect_with_result( $result, $slug, $message = null ) {
 		$args = array(
-			'page'                       => Art_Master_Install_Admin_Settings::PAGE_SETTINGS,
-			'art-master-install-result'  => sanitize_key( $result ),
-			'art-master-install-slug'    => sanitize_key( $slug ),
+			'page'                      => Art_Master_Install_Admin_Settings::PAGE_SETTINGS,
+			'art-master-install-result' => sanitize_key( $result ),
+			'art-master-install-slug'   => sanitize_key( $slug ),
 		);
 
 		if ( is_string( $message ) && '' !== $message ) {

@@ -38,6 +38,37 @@ class Art_Master_Install_Admin_Menu {
 			array(),
 			ART_MASTER_INSTALL_VERSION
 		);
+
+		wp_enqueue_script(
+			'art-master-install-catalog',
+			ART_MASTER_INSTALL_PLUGIN_URL . 'assets/js/admin-catalog.js',
+			array(),
+			ART_MASTER_INSTALL_VERSION,
+			true
+		);
+
+		wp_localize_script(
+			'art-master-install-catalog',
+			'artMasterInstallCatalog',
+			array(
+				'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
+				'ajaxAction'   => Art_Master_Install_Admin_Actions::AJAX_ACTION,
+				'nonce'        => wp_create_nonce( Art_Master_Install_Admin_Actions::AJAX_ACTION ),
+				'autoActivate' => Art_Master_Install_Settings::should_auto_activate(),
+				'i18n'         => array(
+					'install'       => __( 'Установить', 'art-master-install' ),
+					'update'        => __( 'Обновить', 'art-master-install' ),
+					'activate'      => __( 'Активировать', 'art-master-install' ),
+					'upToDate'      => __( 'Актуальная версия', 'art-master-install' ),
+					'queued'        => __( 'В очереди…', 'art-master-install' ),
+					'installing'    => __( 'Устанавливается…', 'art-master-install' ),
+					'activating'    => __( 'Активируется…', 'art-master-install' ),
+					'updating'      => __( 'Обновляется…', 'art-master-install' ),
+					'genericError'  => __( 'Не удалось выполнить действие с плагином.', 'art-master-install' ),
+					'versionLabel'  => __( 'Версия: %s', 'art-master-install' ),
+				),
+			)
+		);
 	}
 
 	/**
