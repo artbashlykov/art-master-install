@@ -4,7 +4,7 @@ Tags: installer, github, art, catalog
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.4.3
+Stable tag: 1.4.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -34,6 +34,13 @@ ART Starter, ART Editor, and ART LMS. More ART extensions will be added in futur
 
 == Changelog ==
 
+= 1.4.5 =
+* Fix: catalog page under Settings uses manage_options again (fixes access denied on multisite and similar setups).
+* Install/update buttons still require install_plugins and update_plugins.
+
+= 1.4.4 =
+* Self-update GitHub checks are throttled to once every 6 hours (Plugins / Updates screens).
+
 = 1.4.3 =
 * Fix: update checker initializes reliably in admin and checks GitHub on the Plugins / Updates screens.
 
@@ -42,7 +49,6 @@ ART Starter, ART Editor, and ART LMS. More ART extensions will be added in futur
 
 = 1.4.1 =
 * GitHub release build script (`scripts/build-release.php`) includes vendor/ for self-updates.
-* Admin menu and settings require `install_plugins` capability.
 * Install/update actions validate catalog plugin state before running.
 
 = 1.4.0 =

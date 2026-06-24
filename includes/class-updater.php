@@ -12,7 +12,10 @@ defined( 'ABSPATH' ) || exit;
  */
 class Art_Master_Install_Updater {
 
-	const GITHUB_REPO = 'artbashlykov/art-master-install';
+	const GITHUB_REPO        = 'artbashlykov/art-master-install';
+	const CHECK_TRANSIENT    = 'art_mi_update_check_at';
+	const CHECK_INTERVAL     = 21600; // 6 hours.
+	const CHECK_INTERVAL_MIN = 900; // 15 minutes.
 
 	/**
 	 * @var object|null
@@ -57,19 +60,62 @@ class Art_Master_Install_Updater {
 
 		self::$checker = $checker;
 
-		add_action( 'load-plugins.php', array( __CLASS__, 'check_for_updates' ), 99 );
-		add_action( 'load-update-core.php', array( __CLASS__, 'check_for_updates' ), 99 );
+		add_action( 'load-plugins.php', array( __CLASS__, 'maybe_check_for_updates' ), 99 );
+		add_action( 'load-update-core.php', array( __CLASS__, 'maybe_check_for_updates' ), 99 );
 	}
 
 	/**
-	 * Force a GitHub update check on key admin screens.
+	 * Check GitHub for plugin updates when the interval has elapsed.
 	 */
-	public static function check_for_updates() {
+	public static function maybe_check_for_updates() {
 		if ( null === self::$checker || ! Art_Master_Install_Security::can_update() ) {
 			return;
 		}
 
+		if ( ! self::should_check_now() ) {
+			return;
+		}
+
 		self::$checker->checkForUpdates();
+		self::mark_checked();
+	}
+
+	/**
+	 * Whether enough time has passed since the last GitHub update check.
+	 *
+	 * @return bool
+	 */
+	private static function should_check_now() {
+		$last_check = (int) get_site_transient( self::CHECK_TRANSIENT );
+
+		if ( $last_check <= 0 ) {
+			return true;
+		}
+
+		return ( time() - $last_check ) >= self::get_check_interval();
+	}
+
+	/**
+	 * Store the timestamp of the latest GitHub update check.
+	 */
+	private static function mark_checked() {
+		set_site_transient( self::CHECK_TRANSIENT, time(), self::get_check_interval() );
+	}
+
+	/**
+	 * Minimum seconds between GitHub update checks on admin screens.
+	 *
+	 * @return int
+	 */
+	private static function get_check_interval() {
+		/**
+		 * Filters how often ART Master Install checks GitHub for plugin updates.
+		 *
+		 * @param int $interval Seconds between checks. Default 6 hours.
+		 */
+		$interval = (int) apply_filters( 'art_master_install_update_check_interval', self::CHECK_INTERVAL );
+
+		return max( self::CHECK_INTERVAL_MIN, $interval );
 	}
 
 	/**

@@ -13,6 +13,15 @@ defined( 'ABSPATH' ) || exit;
 class Art_Master_Install_Security {
 
 	/**
+	 * Check if current user can open the catalog settings page.
+	 *
+	 * @return bool
+	 */
+	public static function can_view_catalog() {
+		return current_user_can( 'manage_options' );
+	}
+
+	/**
 	 * Check if current user can access the catalog admin area.
 	 *
 	 * @return bool

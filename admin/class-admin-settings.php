@@ -29,7 +29,7 @@ class Art_Master_Install_Admin_Settings {
 	 * @return string
 	 */
 	public static function get_page_capability() {
-		return 'install_plugins';
+		return 'manage_options';
 	}
 
 	/**
@@ -63,8 +63,8 @@ class Art_Master_Install_Admin_Settings {
 	 * Render plugins catalog page.
 	 */
 	public static function render_catalog_page() {
-		if ( ! Art_Master_Install_Security::can_manage() ) {
-			return;
+		if ( ! Art_Master_Install_Security::can_view_catalog() ) {
+			wp_die( esc_html__( 'Недостаточно прав.', 'art-master-install' ) );
 		}
 
 		$catalog_items = Art_Master_Install_Catalog::get_all_states( false );

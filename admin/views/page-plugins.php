@@ -18,6 +18,12 @@ defined( 'ABSPATH' ) || exit;
 	<?php Art_Master_Install_Admin_Settings::render_notices(); ?>
 	<?php Art_Master_Install_Admin_Settings::render_settings_saved_notice(); ?>
 
+	<?php if ( ! Art_Master_Install_Security::can_manage() ) : ?>
+		<div class="notice notice-warning">
+			<p><?php esc_html_e( 'Просмотр каталога доступен, но для установки и обновления плагинов нужны права install_plugins и update_plugins.', 'art-master-install' ); ?></p>
+		</div>
+	<?php endif; ?>
+
 	<div class="art-master-install-panel" style="margin-top:10px;">
 		<h2><?php esc_html_e( 'Доступные плагины', 'art-master-install' ); ?></h2>
 
@@ -88,7 +94,7 @@ defined( 'ABSPATH' ) || exit;
 								<?php endif; ?>
 							</td>
 							<td class="art-master-install-actions">
-								<?php if ( ! empty( $actions['install'] ) ) : ?>
+								<?php if ( ! empty( $actions['install'] ) && Art_Master_Install_Security::can_install() ) : ?>
 									<button
 										type="button"
 										class="button button-primary art-master-install-action"
@@ -99,7 +105,7 @@ defined( 'ABSPATH' ) || exit;
 									</button>
 								<?php endif; ?>
 
-								<?php if ( ! empty( $actions['update'] ) ) : ?>
+								<?php if ( ! empty( $actions['update'] ) && Art_Master_Install_Security::can_update() ) : ?>
 									<button
 										type="button"
 										class="button button-primary art-master-install-action"
@@ -110,7 +116,7 @@ defined( 'ABSPATH' ) || exit;
 									</button>
 								<?php endif; ?>
 
-								<?php if ( ! empty( $actions['activate'] ) ) : ?>
+								<?php if ( ! empty( $actions['activate'] ) && current_user_can( 'activate_plugins' ) ) : ?>
 									<a class="button" href="<?php echo esc_url( Art_Master_Install_Admin_Actions::get_activate_url( (string) $catalog_item['plugin_file'] ) ); ?>">
 										<?php esc_html_e( 'Активировать', 'art-master-install' ); ?>
 									</a>
@@ -127,6 +133,7 @@ defined( 'ABSPATH' ) || exit;
 		</table>
 	</div>
 
+	<?php if ( Art_Master_Install_Security::can_install() ) : ?>
 	<div class="art-master-install-panel">
 		<h2><?php esc_html_e( 'Настройки', 'art-master-install' ); ?></h2>
 		<form method="post" action="options.php" class="art-master-install-settings-form">
@@ -154,4 +161,5 @@ defined( 'ABSPATH' ) || exit;
 			<?php submit_button(); ?>
 		</form>
 	</div>
+	<?php endif; ?>
 </div>

@@ -39,6 +39,10 @@ class Art_Master_Install_Admin_Menu {
 			ART_MASTER_INSTALL_VERSION
 		);
 
+		if ( ! Art_Master_Install_Security::can_install() && ! Art_Master_Install_Security::can_update() ) {
+			return;
+		}
+
 		wp_enqueue_script(
 			'art-master-install-catalog',
 			ART_MASTER_INSTALL_PLUGIN_URL . 'assets/js/admin-catalog.js',
@@ -78,7 +82,7 @@ class Art_Master_Install_Admin_Menu {
 	 * @return array<int, string>
 	 */
 	public static function plugin_action_links( $links ) {
-		if ( ! Art_Master_Install_Security::can_manage() ) {
+		if ( ! Art_Master_Install_Security::can_view_catalog() ) {
 			return $links;
 		}
 
