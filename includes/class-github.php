@@ -12,8 +12,8 @@ defined( 'ABSPATH' ) || exit;
  */
 class Art_Master_Install_Github {
 
-	const CACHE_GROUP = 'art_master_install';
-	const CACHE_TTL   = HOUR_IN_SECONDS;
+	const CACHE_TTL         = 21600; // 6 hours.
+	const CACHE_TTL_FAILURE = 900; // 15 minutes.
 
 	/**
 	 * @param string $github_repo Owner/repo.
@@ -74,8 +74,8 @@ class Art_Master_Install_Github {
 
 		$cached = get_site_transient( $cache_key );
 
-		if ( is_array( $cached ) ) {
-			return $cached;
+		if ( is_array( $cached ) && self::is_cache_fresh( $cached ) ) {
+			return self::normalize_cached_release( $cached );
 		}
 
 		$response = wp_remote_get(
@@ -90,18 +90,21 @@ class Art_Master_Install_Github {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			return array();
+			self::store_release_cache( $cache_key, array(), true );
+			return is_array( $cached ) ? self::normalize_cached_release( $cached ) : array();
 		}
 
 		$code = (int) wp_remote_retrieve_response_code( $response );
 		if ( 200 !== $code ) {
-			return array();
+			self::store_release_cache( $cache_key, array(), true );
+			return is_array( $cached ) ? self::normalize_cached_release( $cached ) : array();
 		}
 
 		$body = json_decode( (string) wp_remote_retrieve_body( $response ), true );
 
 		if ( ! is_array( $body ) ) {
-			return array();
+			self::store_release_cache( $cache_key, array(), true );
+			return is_array( $cached ) ? self::normalize_cached_release( $cached ) : array();
 		}
 
 		$release = array(
@@ -109,7 +112,7 @@ class Art_Master_Install_Github {
 			'html_url' => isset( $body['html_url'] ) ? (string) $body['html_url'] : '',
 		);
 
-		set_site_transient( $cache_key, $release, self::CACHE_TTL );
+		self::store_release_cache( $cache_key, $release, false );
 
 		return $release;
 	}
@@ -130,11 +133,56 @@ class Art_Master_Install_Github {
 	}
 
 	/**
+	 * @param string               $cache_key Transient key.
+	 * @param array<string, mixed> $release   Release payload.
+	 * @param bool                 $failed    Whether the fetch failed.
+	 */
+	private static function store_release_cache( $cache_key, array $release, $failed ) {
+		$payload = array(
+			'tag_name'  => isset( $release['tag_name'] ) ? (string) $release['tag_name'] : '',
+			'html_url'  => isset( $release['html_url'] ) ? (string) $release['html_url'] : '',
+			'cached_at' => time(),
+			'failed'    => $failed,
+		);
+
+		$ttl = $failed ? self::CACHE_TTL_FAILURE : self::CACHE_TTL;
+
+		set_site_transient( $cache_key, $payload, $ttl );
+	}
+
+	/**
+	 * @param array<string, mixed> $cached Cached payload.
+	 * @return bool
+	 */
+	private static function is_cache_fresh( array $cached ) {
+		$cached_at = isset( $cached['cached_at'] ) ? (int) $cached['cached_at'] : 0;
+
+		if ( $cached_at <= 0 ) {
+			return ! empty( $cached['tag_name'] );
+		}
+
+		$ttl = ! empty( $cached['failed'] ) ? self::CACHE_TTL_FAILURE : self::CACHE_TTL;
+
+		return ( time() - $cached_at ) < $ttl;
+	}
+
+	/**
+	 * @param array<string, mixed> $cached Cached payload.
+	 * @return array<string, string>
+	 */
+	private static function normalize_cached_release( array $cached ) {
+		return array(
+			'tag_name' => isset( $cached['tag_name'] ) ? (string) $cached['tag_name'] : '',
+			'html_url' => isset( $cached['html_url'] ) ? (string) $cached['html_url'] : '',
+		);
+	}
+
+	/**
 	 * @param string $github_repo Owner/repo.
 	 * @return string
 	 */
 	private static function get_cache_key( $github_repo ) {
-		return 'release_' . md5( self::sanitize_repo( $github_repo ) );
+		return 'art_mi_release_' . md5( self::sanitize_repo( $github_repo ) );
 	}
 
 	/**

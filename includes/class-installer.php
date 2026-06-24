@@ -17,7 +17,7 @@ class Art_Master_Install_Installer {
 	 *
 	 * @param string $slug Catalog slug.
 	 * @param bool   $overwrite Whether to overwrite an existing package.
-	 * @return true|WP_Error
+	 * @return true|'installed_activated'|WP_Error
 	 */
 	public static function install_from_github( $slug, $overwrite = false ) {
 		$item = Art_Master_Install_Catalog::get_item( $slug );
@@ -31,8 +31,8 @@ class Art_Master_Install_Installer {
 
 		self::load_upgrader_dependencies();
 
-		$package = Art_Master_Install_Github::get_release_zip_url( $item['github'], $item['zip_name'] );
-		$skin    = new WP_Ajax_Upgrader_Skin();
+		$package  = Art_Master_Install_Github::get_release_zip_url( $item['github'], $item['zip_name'] );
+		$skin     = new WP_Ajax_Upgrader_Skin();
 		$upgrader = new Plugin_Upgrader( $skin );
 
 		$result = $upgrader->install(
@@ -51,6 +51,47 @@ class Art_Master_Install_Installer {
 			$message  = ! empty( $messages ) ? implode( ' ', $messages ) : __( 'Не удалось установить плагин из GitHub.', 'art-master-install' );
 
 			return new WP_Error( 'art_master_install_install_failed', $message );
+		}
+
+		if ( $overwrite || ! Art_Master_Install_Settings::should_auto_activate() ) {
+			return true;
+		}
+
+		$activated = self::activate_catalog_plugin( (string) $item['plugin_file'] );
+
+		if ( is_wp_error( $activated ) ) {
+			return $activated;
+		}
+
+		return 'installed_activated';
+	}
+
+	/**
+	 * Activate a catalog plugin after install.
+	 *
+	 * @param string $plugin_file Plugin basename.
+	 * @return true|WP_Error
+	 */
+	private static function activate_catalog_plugin( $plugin_file ) {
+		if ( ! function_exists( 'activate_plugin' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+
+		if ( is_plugin_active( $plugin_file ) ) {
+			return true;
+		}
+
+		$activate_result = activate_plugin( $plugin_file, '', false, true );
+
+		if ( is_wp_error( $activate_result ) ) {
+			return new WP_Error(
+				'art_master_install_activate_failed',
+				sprintf(
+					/* translators: %s: error message */
+					__( 'Плагин установлен, но не удалось активировать: %s', 'art-master-install' ),
+					$activate_result->get_error_message()
+				)
+			);
 		}
 
 		return true;

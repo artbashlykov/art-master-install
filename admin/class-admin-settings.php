@@ -19,6 +19,31 @@ class Art_Master_Install_Admin_Settings {
 	 */
 	public static function init() {
 		add_action( 'admin_menu', array( __CLASS__, 'register_options_page' ), 99999 );
+		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
+		add_filter( 'option_page_capability_art_master_install_settings_group', array( __CLASS__, 'get_page_capability' ) );
+	}
+
+	/**
+	 * Capability required for the catalog page and its settings form.
+	 *
+	 * @return string
+	 */
+	public static function get_page_capability() {
+		return 'install_plugins';
+	}
+
+	/**
+	 * Register settings group.
+	 */
+	public static function register_settings() {
+		register_setting(
+			'art_master_install_settings_group',
+			Art_Master_Install_Settings::OPTION,
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => array( 'Art_Master_Install_Settings', 'sanitize' ),
+			)
+		);
 	}
 
 	/**
@@ -28,7 +53,7 @@ class Art_Master_Install_Admin_Settings {
 		add_options_page(
 			__( 'Плагины Арта', 'art-master-install' ),
 			__( 'Плагины Арта', 'art-master-install' ),
-			'manage_options',
+			self::get_page_capability(),
 			self::PAGE_SETTINGS,
 			array( __CLASS__, 'render_catalog_page' )
 		);
@@ -42,9 +67,23 @@ class Art_Master_Install_Admin_Settings {
 			return;
 		}
 
-		$catalog_items = Art_Master_Install_Catalog::get_all_states( true );
+		$catalog_items = Art_Master_Install_Catalog::get_all_states( false );
 
 		include ART_MASTER_INSTALL_PLUGIN_DIR . 'admin/views/page-plugins.php';
+	}
+
+	/**
+	 * Show a success notice after options.php saves settings.
+	 */
+	public static function render_settings_saved_notice() {
+		$settings_updated = filter_input( INPUT_GET, 'settings-updated', FILTER_SANITIZE_FULL_SPECIAL_CHARS );
+		if ( empty( $settings_updated ) ) {
+			return;
+		}
+
+		echo '<div class="notice notice-success is-dismissible"><p>';
+		esc_html_e( 'Настройки сохранены.', 'art-master-install' );
+		echo '</p></div>';
 	}
 
 	/**
@@ -68,6 +107,17 @@ class Art_Master_Install_Admin_Settings {
 
 		$item = '' !== $slug ? Art_Master_Install_Catalog::get_item( $slug ) : null;
 		$name = is_array( $item ) ? (string) $item['name'] : $slug;
+
+		if ( 'installed_activated' === $result ) {
+			echo '<div class="notice notice-success is-dismissible"><p>';
+			printf(
+				/* translators: %s: plugin name */
+				esc_html__( 'Плагин «%s» установлен и активирован.', 'art-master-install' ),
+				esc_html( $name )
+			);
+			echo '</p></div>';
+			return;
+		}
 
 		if ( 'installed' === $result ) {
 			echo '<div class="notice notice-success is-dismissible"><p>';

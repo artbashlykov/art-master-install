@@ -1,4 +1,5 @@
 # Excluded from WordPress.org plugin zip (and Plugin Check when using this list).
+# GitHub releases: php scripts/build-release.php (includes vendor/ for self-updates).
 .git
 gitignore.template
 deploy-exclude.txt

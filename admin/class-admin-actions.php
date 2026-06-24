@@ -59,6 +59,16 @@ class Art_Master_Install_Admin_Actions {
 			self::redirect_with_result( 'error', $slug, __( 'Неизвестный плагин каталога.', 'art-master-install' ) );
 		}
 
+		$item_state = Art_Master_Install_Catalog::get_item_state( $slug, false );
+
+		if ( $overwrite ) {
+			if ( null === $item_state || empty( $item_state['is_installed'] ) ) {
+				self::redirect_with_result( 'error', $slug, __( 'Плагин не установлен — обновление невозможно.', 'art-master-install' ) );
+			}
+		} elseif ( null !== $item_state && ! empty( $item_state['is_installed'] ) ) {
+			self::redirect_with_result( 'error', $slug, __( 'Плагин уже установлен.', 'art-master-install' ) );
+		}
+
 		$result = Art_Master_Install_Installer::install_from_github( $slug, $overwrite );
 
 		if ( is_wp_error( $result ) ) {
@@ -70,7 +80,11 @@ class Art_Master_Install_Admin_Actions {
 			Art_Master_Install_Github::clear_release_cache( (string) $item['github'] );
 		}
 
-		self::redirect_with_result( $overwrite ? 'updated' : 'installed', $slug );
+		if ( $overwrite ) {
+			self::redirect_with_result( 'updated', $slug );
+		}
+
+		self::redirect_with_result( 'installed_activated' === $result ? 'installed_activated' : 'installed', $slug );
 	}
 
 	/**

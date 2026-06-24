@@ -16,6 +16,7 @@ class Art_Master_Install_Activator {
 	 * Run on plugin activation.
 	 */
 	public static function activate() {
-		// Reserved for future setup.
+		require_once ART_MASTER_INSTALL_PLUGIN_DIR . 'includes/class-settings.php';
+		Art_Master_Install_Settings::ensure_defaults();
 	}
 }

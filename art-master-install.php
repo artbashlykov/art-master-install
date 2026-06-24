@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       ART Master Install
  * Description:       Мастер установщик плагинов, тем и дополнения Арта в один клик
- * Version:           1.4.0
+ * Version:           1.4.1
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Арт Башлыков
@@ -16,13 +16,15 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'ART_MASTER_INSTALL_VERSION', '1.4.0' );
+define( 'ART_MASTER_INSTALL_VERSION', '1.4.1' );
 define( 'ART_MASTER_INSTALL_ADMIN_MENU_SLUG', 'art-master-install' );
 define( 'ART_MASTER_INSTALL_AUTHOR_URL', 'https://forge.artbashlykov.ru' );
 define( 'ART_MASTER_INSTALL_PLUGIN_FILE', __FILE__ );
 define( 'ART_MASTER_INSTALL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ART_MASTER_INSTALL_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'ART_MASTER_INSTALL_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
+
+add_filter( 'puc_view_details_link-' . ART_MASTER_INSTALL_ADMIN_MENU_SLUG, '__return_empty_string' );
 
 require_once ART_MASTER_INSTALL_PLUGIN_DIR . 'includes/class-activator.php';
 require_once ART_MASTER_INSTALL_PLUGIN_DIR . 'includes/class-deactivator.php';

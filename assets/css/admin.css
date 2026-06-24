@@ -107,3 +107,12 @@
 	background: #f0f6fc;
 	border-color: #72aee6;
 }
+
+.art-master-install-settings-form .form-table {
+	margin-top: 0;
+}
+
+.art-master-install-settings-form .submit {
+	margin-top: 0;
+	padding-top: 0;
+}

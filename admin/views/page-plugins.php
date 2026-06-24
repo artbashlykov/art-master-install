@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit;
 	<h1><?php esc_html_e( 'Плагины Арта', 'art-master-install' ); ?></h1>
 
 	<?php Art_Master_Install_Admin_Settings::render_notices(); ?>
+	<?php Art_Master_Install_Admin_Settings::render_settings_saved_notice(); ?>
 
 	<div class="art-master-install-panel" style="margin-top:10px;">
 		<h2><?php esc_html_e( 'Доступные плагины', 'art-master-install' ); ?></h2>
@@ -75,7 +76,12 @@ defined( 'ABSPATH' ) || exit;
 										$status_label = __( 'Активен', 'art-master-install' );
 									}
 								} else {
-									$status_label = __( 'Установлен, не активен', 'art-master-install' );
+									if ( ! empty( $catalog_item['update_available'] ) ) {
+										$status_class = 'art-master-install-status art-master-install-status--update';
+										$status_label = __( 'Установлен, доступно обновление', 'art-master-install' );
+									} else {
+										$status_label = __( 'Установлен, не активен', 'art-master-install' );
+									}
 								}
 								?>
 								<span class="<?php echo esc_attr( $status_class ); ?>">
@@ -122,5 +128,33 @@ defined( 'ABSPATH' ) || exit;
 				<?php endif; ?>
 			</tbody>
 		</table>
+	</div>
+
+	<div class="art-master-install-panel">
+		<h2><?php esc_html_e( 'Настройки', 'art-master-install' ); ?></h2>
+		<form method="post" action="options.php" class="art-master-install-settings-form">
+			<?php settings_fields( 'art_master_install_settings_group' ); ?>
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row"><?php esc_html_e( 'После установки', 'art-master-install' ); ?></th>
+					<td>
+						<label for="art_master_install_auto_activate">
+							<input
+								type="checkbox"
+								id="art_master_install_auto_activate"
+								name="<?php echo esc_attr( Art_Master_Install_Settings::OPTION ); ?>[auto_activate]"
+								value="yes"
+								<?php checked( Art_Master_Install_Settings::should_auto_activate() ); ?>
+							>
+							<?php esc_html_e( 'Активировать плагин автоматически', 'art-master-install' ); ?>
+						</label>
+						<p class="description">
+							<?php esc_html_e( 'После установки из каталога плагин сразу включается без перехода на экран «Плагины».', 'art-master-install' ); ?>
+						</p>
+					</td>
+				</tr>
+			</table>
+			<?php submit_button(); ?>
+		</form>
 	</div>
 </div>
