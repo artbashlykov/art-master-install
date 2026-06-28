@@ -72,7 +72,7 @@ class Art_Master_Install_Admin_Menu {
 					'updating'       => __( 'Обновляется…', 'art-master-install' ),
 					'checking'       => __( 'Проверяем обновления…', 'art-master-install' ),
 					'checkUpdates'   => __( 'Проверить обновления', 'art-master-install' ),
-					'genericError'   => __( 'Не удалось выполнить действие с плагином.', 'art-master-install' ),
+					'genericError'   => __( 'Не удалось выполнить действие с элементом каталога.', 'art-master-install' ),
 					'checkError'     => __( 'Не удалось проверить обновления.', 'art-master-install' ),
 					/* translators: 1: installed version, 2: latest GitHub version or dash */
 					'selfUpdateStatus' => __( 'Установленная версия: %1$s. Последний релиз на GitHub: %2$s.', 'art-master-install' ),
@@ -99,7 +99,7 @@ class Art_Master_Install_Admin_Menu {
 		$catalog_link = sprintf(
 			'<a href="%s">%s</a>',
 			esc_url( Art_Master_Install_Admin_Settings::get_page_url() ),
-			esc_html__( 'Плагины Арта', 'art-master-install' )
+			esc_html__( 'Каталог Арта', 'art-master-install' )
 		);
 
 		return array_merge( array( $catalog_link ), $links );

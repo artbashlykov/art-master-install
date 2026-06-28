@@ -12,7 +12,8 @@ defined( 'ABSPATH' ) || exit;
  */
 class Art_Master_Install_Settings {
 
-	const OPTION = 'art_master_install_settings';
+	const OPTION                 = 'art_master_install_settings';
+	const OPTION_DELETE_ON_UNINSTALL = 'art_master_install_delete_data_on_uninstall';
 
 	/**
 	 * Register hooks.
@@ -116,6 +117,24 @@ class Art_Master_Install_Settings {
 	}
 
 	/**
+	 * Whether plugin data should be removed on uninstall.
+	 *
+	 * @return bool
+	 */
+	public static function should_delete_data_on_uninstall() {
+		return 'yes' === get_option( self::OPTION_DELETE_ON_UNINSTALL, 'no' );
+	}
+
+	/**
+	 * Persist the uninstall data removal preference.
+	 *
+	 * @param bool $enabled Whether to delete data on uninstall.
+	 */
+	public static function set_delete_data_on_uninstall( $enabled ) {
+		update_option( self::OPTION_DELETE_ON_UNINSTALL, $enabled ? 'yes' : 'no', false );
+	}
+
+	/**
 	 * Schedule or clear recurring catalog checks based on settings.
 	 */
 	public static function sync_cron_schedule() {
@@ -142,6 +161,10 @@ class Art_Master_Install_Settings {
 			'auto_activate'       => isset( $input['auto_activate'] ) && 'yes' === $input['auto_activate'] ? 'yes' : 'no',
 			'auto_update_catalog' => isset( $input['auto_update_catalog'] ) && 'yes' === $input['auto_update_catalog'] ? 'yes' : 'no',
 			'auto_update_self'    => $auto_update_self,
+		);
+
+		self::set_delete_data_on_uninstall(
+			isset( $input['delete_data_on_uninstall'] ) && 'yes' === $input['delete_data_on_uninstall']
 		);
 
 		self::sync_cron_schedule();

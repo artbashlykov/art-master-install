@@ -19,23 +19,34 @@ class Art_Master_Install_Catalog_UI {
 	 * @return array{class: string, label: string}
 	 */
 	public static function get_status_badge( array $item ) {
+		$is_theme     = self::is_theme_item( $item );
 		$status_class = 'art-master-install-status art-master-install-status--inactive';
-		$status_label = __( 'Установлен, не активен', 'art-master-install' );
+		$status_label = $is_theme
+			? __( 'Установлена, не активна', 'art-master-install' )
+			: __( 'Установлен, не активен', 'art-master-install' );
 
 		if ( 'not_installed' === $item['status'] ) {
 			$status_class = 'art-master-install-status art-master-install-status--not-installed';
-			$status_label = __( 'Не установлен', 'art-master-install' );
+			$status_label = $is_theme
+				? __( 'Не установлена', 'art-master-install' )
+				: __( 'Не установлен', 'art-master-install' );
 		} elseif ( 'active' === $item['status'] ) {
 			if ( ! empty( $item['update_available'] ) ) {
 				$status_class = 'art-master-install-status art-master-install-status--update';
-				$status_label = __( 'Активен, доступно обновление', 'art-master-install' );
+				$status_label = $is_theme
+					? __( 'Активна, доступно обновление', 'art-master-install' )
+					: __( 'Активен, доступно обновление', 'art-master-install' );
 			} else {
 				$status_class = 'art-master-install-status art-master-install-status--active';
-				$status_label = __( 'Активен', 'art-master-install' );
+				$status_label = $is_theme
+					? __( 'Активна', 'art-master-install' )
+					: __( 'Активен', 'art-master-install' );
 			}
 		} elseif ( ! empty( $item['update_available'] ) ) {
 			$status_class = 'art-master-install-status art-master-install-status--update';
-			$status_label = __( 'Установлен, доступно обновление', 'art-master-install' );
+			$status_label = $is_theme
+				? __( 'Установлена, доступно обновление', 'art-master-install' )
+				: __( 'Установлен, доступно обновление', 'art-master-install' );
 		}
 
 		return array(
@@ -72,20 +83,29 @@ class Art_Master_Install_Catalog_UI {
 	 */
 	public static function get_client_payload( array $item ) {
 		$badge = self::get_status_badge( $item );
+		$type  = self::get_catalog_type( $item );
 
-		return array(
+		$payload = array(
 			'slug'              => (string) $item['slug'],
 			'name'              => (string) $item['name'],
+			'catalog_type'      => $type,
 			'status'            => (string) $item['status'],
 			'installed_version' => (string) $item['installed_version'],
 			'latest_version'    => (string) $item['latest_version'],
 			'update_available'  => ! empty( $item['update_available'] ),
 			'is_active'         => ! empty( $item['is_active'] ),
-			'plugin_file'       => (string) $item['plugin_file'],
 			'status_class'      => $badge['class'],
 			'status_label'      => $badge['label'],
 			'actions'           => self::get_actions_config( $item ),
 		);
+
+		if ( self::is_theme_item( $item ) ) {
+			$payload['stylesheet'] = (string) $item['stylesheet'];
+		} else {
+			$payload['plugin_file'] = (string) $item['plugin_file'];
+		}
+
+		return $payload;
 	}
 
 	/**
@@ -116,5 +136,23 @@ class Art_Master_Install_Catalog_UI {
 		}
 
 		return $actions;
+	}
+
+	/**
+	 * @param array<string, mixed> $item Catalog item state.
+	 * @return string plugin|theme
+	 */
+	public static function get_catalog_type( array $item ) {
+		return ! empty( $item['catalog_type'] ) && 'theme' === $item['catalog_type']
+			? 'theme'
+			: Art_Master_Install_Catalog::CATALOG_TYPE;
+	}
+
+	/**
+	 * @param array<string, mixed> $item Catalog item state.
+	 * @return bool
+	 */
+	public static function is_theme_item( array $item ) {
+		return 'theme' === self::get_catalog_type( $item );
 	}
 }

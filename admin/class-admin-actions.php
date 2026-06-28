@@ -49,6 +49,8 @@ class Art_Master_Install_Admin_Actions {
 		$catalog_action = isset( $_POST['catalog_action'] ) ? sanitize_key( wp_unslash( $_POST['catalog_action'] ) ) : '';
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified above.
 		$slug = isset( $_POST['slug'] ) ? sanitize_key( wp_unslash( $_POST['slug'] ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified above.
+		$catalog_type = isset( $_POST['catalog_type'] ) ? sanitize_key( wp_unslash( $_POST['catalog_type'] ) ) : Art_Master_Install_Catalog::CATALOG_TYPE;
 
 		if ( 'check_updates' === $catalog_action ) {
 			if ( ! Art_Master_Install_Security::can_view_catalog() ) {
@@ -73,13 +75,14 @@ class Art_Master_Install_Admin_Actions {
 		}
 
 		$overwrite = ( 'update' === $catalog_action );
-		$result    = self::process_catalog_action( $slug, $overwrite );
+		$result    = self::process_catalog_action( $slug, $overwrite, $catalog_type );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error(
 				array(
-					'message' => $result->get_error_message(),
-					'slug'    => $slug,
+					'message'      => $result->get_error_message(),
+					'slug'         => $slug,
+					'catalog_type' => $catalog_type,
 				),
 				400
 			);
@@ -92,9 +95,12 @@ class Art_Master_Install_Admin_Actions {
 	 * @param bool $overwrite Whether to overwrite an existing install.
 	 */
 	private static function handle_package_action( $overwrite ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Legacy admin-post flow.
+		$catalog_type = isset( $_GET['catalog_type'] ) ? sanitize_key( wp_unslash( $_GET['catalog_type'] ) ) : Art_Master_Install_Catalog::CATALOG_TYPE;
+
 		$allowed = $overwrite
-			? Art_Master_Install_Security::can_update()
-			: Art_Master_Install_Security::can_install();
+			? self::can_update_catalog_type( $catalog_type )
+			: self::can_install_catalog_type( $catalog_type );
 
 		if ( ! $allowed ) {
 			wp_die( esc_html__( 'Недостаточно прав.', 'art-master-install' ) );
@@ -106,7 +112,7 @@ class Art_Master_Install_Admin_Actions {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Verified above.
 		$slug = isset( $_GET['slug'] ) ? sanitize_key( wp_unslash( $_GET['slug'] ) ) : '';
 
-		$result = self::process_catalog_action( $slug, $overwrite );
+		$result = self::process_catalog_action( $slug, $overwrite, $catalog_type );
 
 		if ( is_wp_error( $result ) ) {
 			self::redirect_with_result( 'error', $slug, $result->get_error_message() );
@@ -118,14 +124,17 @@ class Art_Master_Install_Admin_Actions {
 	/**
 	 * Run install or update for a catalog slug.
 	 *
-	 * @param string $slug      Catalog slug.
-	 * @param bool   $overwrite Whether to overwrite an existing package.
+	 * @param string $slug         Catalog slug.
+	 * @param bool   $overwrite    Whether to overwrite an existing package.
+	 * @param string $catalog_type plugin|theme.
 	 * @return array<string, mixed>|WP_Error
 	 */
-	private static function process_catalog_action( $slug, $overwrite ) {
+	private static function process_catalog_action( $slug, $overwrite, $catalog_type = Art_Master_Install_Catalog::CATALOG_TYPE ) {
+		$catalog_type = self::normalize_catalog_type( $catalog_type );
+
 		$allowed = $overwrite
-			? Art_Master_Install_Security::can_update()
-			: Art_Master_Install_Security::can_install();
+			? self::can_update_catalog_type( $catalog_type )
+			: self::can_install_catalog_type( $catalog_type );
 
 		if ( ! $allowed ) {
 			return new WP_Error(
@@ -134,67 +143,83 @@ class Art_Master_Install_Admin_Actions {
 			);
 		}
 
-		if ( '' === $slug || null === Art_Master_Install_Catalog::get_item( $slug ) ) {
+		if ( '' === $slug || null === self::get_catalog_item( $slug, $catalog_type ) ) {
 			return new WP_Error(
 				'art_master_install_unknown_slug',
-				__( 'Неизвестный плагин каталога.', 'art-master-install' )
+				self::is_theme_catalog_type( $catalog_type )
+					? __( 'Неизвестная тема каталога.', 'art-master-install' )
+					: __( 'Неизвестный плагин каталога.', 'art-master-install' )
 			);
 		}
 
-		$item_state = Art_Master_Install_Catalog::get_item_state( $slug, false );
+		$item_state = self::get_catalog_item_state( $slug, $catalog_type, false );
 
 		if ( $overwrite ) {
 			if ( null === $item_state || empty( $item_state['is_installed'] ) ) {
 				return new WP_Error(
 					'art_master_install_not_installed',
-					__( 'Плагин не установлен — обновление невозможно.', 'art-master-install' )
+					self::is_theme_catalog_type( $catalog_type )
+						? __( 'Тема не установлена — обновление невозможно.', 'art-master-install' )
+						: __( 'Плагин не установлен — обновление невозможно.', 'art-master-install' )
 				);
 			}
 		} elseif ( null !== $item_state && ! empty( $item_state['is_installed'] ) ) {
 			return new WP_Error(
 				'art_master_install_already_installed',
-				__( 'Плагин уже установлен.', 'art-master-install' )
+				self::is_theme_catalog_type( $catalog_type )
+					? __( 'Тема уже установлена.', 'art-master-install' )
+					: __( 'Плагин уже установлен.', 'art-master-install' )
 			);
 		}
 
-		$install_result = Art_Master_Install_Installer::install_from_github( $slug, $overwrite );
+		$install_result = self::is_theme_catalog_type( $catalog_type )
+			? Art_Master_Install_Theme_Installer::install_from_github( $slug, $overwrite )
+			: Art_Master_Install_Installer::install_from_github( $slug, $overwrite );
 
 		if ( is_wp_error( $install_result ) ) {
 			return $install_result;
 		}
 
-		$item = Art_Master_Install_Catalog::get_item( $slug );
+		$item = self::get_catalog_item( $slug, $catalog_type );
 		if ( is_array( $item ) && ! empty( $item['github'] ) ) {
 			Art_Master_Install_Github::clear_release_cache( (string) $item['github'] );
 		}
 
-		$fresh_state = Art_Master_Install_Catalog::get_item_state( $slug, true );
+		$fresh_state = self::get_catalog_item_state( $slug, $catalog_type, true );
 		if ( null === $fresh_state ) {
 			return new WP_Error(
 				'art_master_install_state_failed',
-				__( 'Не удалось получить состояние плагина после установки.', 'art-master-install' )
+				self::is_theme_catalog_type( $catalog_type )
+					? __( 'Не удалось получить состояние темы после установки.', 'art-master-install' )
+					: __( 'Не удалось получить состояние плагина после установки.', 'art-master-install' )
 			);
 		}
 
 		$result_code = 'installed';
 		$message     = sprintf(
-			/* translators: %s: plugin name */
-			__( 'Плагин «%s» установлен из GitHub.', 'art-master-install' ),
+			/* translators: %s: catalog item name */
+			self::is_theme_catalog_type( $catalog_type )
+				? __( 'Тема «%s» установлена из GitHub.', 'art-master-install' )
+				: __( 'Плагин «%s» установлен из GitHub.', 'art-master-install' ),
 			(string) $fresh_state['name']
 		);
 
 		if ( $overwrite ) {
 			$result_code = 'updated';
 			$message     = sprintf(
-				/* translators: %s: plugin name */
-				__( 'Плагин «%s» обновлён из GitHub.', 'art-master-install' ),
+				/* translators: %s: catalog item name */
+				self::is_theme_catalog_type( $catalog_type )
+					? __( 'Тема «%s» обновлена из GitHub.', 'art-master-install' )
+					: __( 'Плагин «%s» обновлён из GitHub.', 'art-master-install' ),
 				(string) $fresh_state['name']
 			);
 		} elseif ( 'installed_activated' === $install_result ) {
 			$result_code = 'installed_activated';
 			$message     = sprintf(
-				/* translators: %s: plugin name */
-				__( 'Плагин «%s» установлен и активирован.', 'art-master-install' ),
+				/* translators: %s: catalog item name */
+				self::is_theme_catalog_type( $catalog_type )
+					? __( 'Тема «%s» установлена и активирована.', 'art-master-install' )
+					: __( 'Плагин «%s» установлен и активирован.', 'art-master-install' ),
 				(string) $fresh_state['name']
 			);
 		}
@@ -202,7 +227,11 @@ class Art_Master_Install_Admin_Actions {
 		$payload = Art_Master_Install_Catalog_UI::get_client_payload( $fresh_state );
 
 		if ( ! empty( $payload['actions']['activate'] ) ) {
-			$payload['activate_url'] = self::get_activate_url( (string) $fresh_state['plugin_file'] );
+			if ( self::is_theme_catalog_type( $catalog_type ) ) {
+				$payload['activate_url'] = self::get_activate_theme_url( (string) $fresh_state['stylesheet'] );
+			} else {
+				$payload['activate_url'] = self::get_activate_url( (string) $fresh_state['plugin_file'] );
+			}
 		}
 
 		return array(
@@ -236,14 +265,16 @@ class Art_Master_Install_Admin_Actions {
 	 * Install action URL.
 	 *
 	 * @param string $slug Catalog slug.
+	 * @param string $catalog_type plugin|theme.
 	 * @return string
 	 */
-	public static function get_install_url( $slug ) {
+	public static function get_install_url( $slug, $catalog_type = Art_Master_Install_Catalog::CATALOG_TYPE ) {
 		return wp_nonce_url(
 			add_query_arg(
 				array(
-					'action' => self::ACTION_INSTALL,
-					'slug'   => sanitize_key( $slug ),
+					'action'       => self::ACTION_INSTALL,
+					'slug'         => sanitize_key( $slug ),
+					'catalog_type' => self::normalize_catalog_type( $catalog_type ),
 				),
 				admin_url( 'admin-post.php' )
 			),
@@ -255,14 +286,16 @@ class Art_Master_Install_Admin_Actions {
 	 * Update action URL.
 	 *
 	 * @param string $slug Catalog slug.
+	 * @param string $catalog_type plugin|theme.
 	 * @return string
 	 */
-	public static function get_update_url( $slug ) {
+	public static function get_update_url( $slug, $catalog_type = Art_Master_Install_Catalog::CATALOG_TYPE ) {
 		return wp_nonce_url(
 			add_query_arg(
 				array(
-					'action' => self::ACTION_UPDATE,
-					'slug'   => sanitize_key( $slug ),
+					'action'       => self::ACTION_UPDATE,
+					'slug'         => sanitize_key( $slug ),
+					'catalog_type' => self::normalize_catalog_type( $catalog_type ),
 				),
 				admin_url( 'admin-post.php' )
 			),
@@ -287,5 +320,91 @@ class Art_Master_Install_Admin_Actions {
 			),
 			'activate-plugin_' . $plugin_file
 		);
+	}
+
+	/**
+	 * Activate theme URL.
+	 *
+	 * @param string $stylesheet Theme stylesheet slug.
+	 * @return string
+	 */
+	public static function get_activate_theme_url( $stylesheet ) {
+		$stylesheet = sanitize_key( $stylesheet );
+
+		return wp_nonce_url(
+			add_query_arg(
+				array(
+					'action'     => 'activate',
+					'stylesheet' => $stylesheet,
+				),
+				admin_url( 'themes.php' )
+			),
+			'switch-theme_' . $stylesheet
+		);
+	}
+
+	/**
+	 * @param string $catalog_type Raw catalog type.
+	 * @return string plugin|theme
+	 */
+	private static function normalize_catalog_type( $catalog_type ) {
+		return Art_Master_Install_Theme_Catalog::CATALOG_TYPE === sanitize_key( (string) $catalog_type )
+			? Art_Master_Install_Theme_Catalog::CATALOG_TYPE
+			: Art_Master_Install_Catalog::CATALOG_TYPE;
+	}
+
+	/**
+	 * @param string $catalog_type plugin|theme.
+	 * @return bool
+	 */
+	private static function is_theme_catalog_type( $catalog_type ) {
+		return Art_Master_Install_Theme_Catalog::CATALOG_TYPE === self::normalize_catalog_type( $catalog_type );
+	}
+
+	/**
+	 * @param string $slug Catalog slug.
+	 * @param string $catalog_type plugin|theme.
+	 * @return array<string, string>|null
+	 */
+	private static function get_catalog_item( $slug, $catalog_type ) {
+		if ( self::is_theme_catalog_type( $catalog_type ) ) {
+			return Art_Master_Install_Theme_Catalog::get_item( $slug );
+		}
+
+		return Art_Master_Install_Catalog::get_item( $slug );
+	}
+
+	/**
+	 * @param string $slug Catalog slug.
+	 * @param string $catalog_type plugin|theme.
+	 * @param bool   $force_refresh Whether to bypass cached GitHub release data.
+	 * @return array<string, mixed>|null
+	 */
+	private static function get_catalog_item_state( $slug, $catalog_type, $force_refresh ) {
+		if ( self::is_theme_catalog_type( $catalog_type ) ) {
+			return Art_Master_Install_Theme_Catalog::get_item_state( $slug, $force_refresh );
+		}
+
+		return Art_Master_Install_Catalog::get_item_state( $slug, $force_refresh );
+	}
+
+	/**
+	 * @param string $catalog_type plugin|theme.
+	 * @return bool
+	 */
+	private static function can_install_catalog_type( $catalog_type ) {
+		return self::is_theme_catalog_type( $catalog_type )
+			? Art_Master_Install_Security::can_install_themes()
+			: Art_Master_Install_Security::can_install();
+	}
+
+	/**
+	 * @param string $catalog_type plugin|theme.
+	 * @return bool
+	 */
+	private static function can_update_catalog_type( $catalog_type ) {
+		return self::is_theme_catalog_type( $catalog_type )
+			? Art_Master_Install_Security::can_update_themes()
+			: Art_Master_Install_Security::can_update();
 	}
 }

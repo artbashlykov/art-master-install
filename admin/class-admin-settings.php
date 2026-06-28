@@ -52,8 +52,8 @@ class Art_Master_Install_Admin_Settings {
 	 */
 	public static function register_admin_pages() {
 		add_options_page(
-			__( 'Плагины Арта', 'art-master-install' ),
-			__( 'Плагины Арта', 'art-master-install' ),
+			__( 'Каталог Арта', 'art-master-install' ),
+			__( 'Каталог Арта', 'art-master-install' ),
 			'manage_options',
 			self::PAGE_SETTINGS,
 			array( __CLASS__, 'render_catalog_page' )
@@ -89,25 +89,12 @@ class Art_Master_Install_Admin_Settings {
 			wp_die( esc_html__( 'Недостаточно прав.', 'art-master-install' ) );
 		}
 
-		$catalog_items = Art_Master_Install_Catalog::get_all_states( false );
-		$last_check_label = Art_Master_Install_Catalog_Updates::get_last_check_label();
+		$plugin_catalog_items = Art_Master_Install_Catalog::get_all_states( false );
+		$theme_catalog_items  = Art_Master_Install_Theme_Catalog::get_all_states( false );
+		$last_check_label    = Art_Master_Install_Catalog_Updates::get_last_check_label();
 		$master_update    = Art_Master_Install_Updater::get_self_update_state( false );
 
 		include ART_MASTER_INSTALL_PLUGIN_DIR . 'admin/views/page-plugins.php';
-	}
-
-	/**
-	 * Show a success notice after options.php saves settings.
-	 */
-	public static function render_settings_saved_notice() {
-		$settings_updated = filter_input( INPUT_GET, 'settings-updated', FILTER_SANITIZE_FULL_SPECIAL_CHARS );
-		if ( empty( $settings_updated ) ) {
-			return;
-		}
-
-		echo '<div class="notice notice-success is-dismissible"><p>';
-		esc_html_e( 'Настройки сохранены.', 'art-master-install' );
-		echo '</p></div>';
 	}
 
 	/**
@@ -129,7 +116,7 @@ class Art_Master_Install_Admin_Settings {
 			? sanitize_text_field( rawurldecode( wp_unslash( $raw_message ) ) )
 			: '';
 
-		$item = '' !== $slug ? Art_Master_Install_Catalog::get_item( $slug ) : null;
+		$item = '' !== $slug ? self::resolve_catalog_item( $slug ) : null;
 		$name = is_array( $item ) ? (string) $item['name'] : $slug;
 
 		if ( 'installed_activated' === $result ) {
@@ -170,10 +157,26 @@ class Art_Master_Install_Admin_Settings {
 			if ( '' !== $message ) {
 				echo esc_html( $message );
 			} else {
-				esc_html_e( 'Не удалось выполнить действие с плагином.', 'art-master-install' );
+				esc_html_e( 'Не удалось выполнить действие с элементом каталога.', 'art-master-install' );
 			}
 			echo '</p></div>';
 		}
+	}
+
+	/**
+	 * Resolve catalog item metadata from plugin or theme catalog.
+	 *
+	 * @param string $slug Catalog slug.
+	 * @return array<string, string>|null
+	 */
+	private static function resolve_catalog_item( $slug ) {
+		$item = Art_Master_Install_Catalog::get_item( $slug );
+
+		if ( is_array( $item ) ) {
+			return $item;
+		}
+
+		return Art_Master_Install_Theme_Catalog::get_item( $slug );
 	}
 
 	/**

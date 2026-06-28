@@ -8,12 +8,19 @@
 	const config = artMasterInstallCatalog;
 	const i18n = config.i18n || {};
 	const queue = [];
-	const queuedSlugs = new Set();
+	const queuedKeys = new Set();
 	const rowSnapshots = new Map();
 	let running = false;
 
-	function row( slug ) {
-		return document.querySelector( '.art-master-install-row[data-slug="' + slug + '"]' );
+	function queueKey( slug, catalogType ) {
+		return ( catalogType || 'plugin' ) + ':' + slug;
+	}
+
+	function row( slug, catalogType ) {
+		const type = catalogType || 'plugin';
+		return document.querySelector(
+			'.art-master-install-row[data-slug="' + slug + '"][data-catalog-type="' + type + '"]'
+		);
 	}
 
 	function statusBadgeEl( rowEl ) {
@@ -28,24 +35,27 @@
 		return rowEl ? rowEl.querySelector( '.art-master-install-actions' ) : null;
 	}
 
-	function snapshotRow( slug ) {
-		const rowEl = row( slug );
-		if ( ! rowEl || rowSnapshots.has( slug ) ) {
+	function snapshotRow( slug, catalogType ) {
+		const key = queueKey( slug, catalogType );
+		const rowEl = row( slug, catalogType );
+
+		if ( ! rowEl || rowSnapshots.has( key ) ) {
 			return;
 		}
 
 		const statusCell = rowEl.querySelector( '.art-master-install-status-cell' );
 		const actionsCell = actionsEl( rowEl );
 
-		rowSnapshots.set( slug, {
+		rowSnapshots.set( key, {
 			statusHtml: statusCell ? statusCell.innerHTML : '',
 			actionsHtml: actionsCell ? actionsCell.innerHTML : '',
 		} );
 	}
 
-	function restoreRow( slug ) {
-		const rowEl = row( slug );
-		const snapshot = rowSnapshots.get( slug );
+	function restoreRow( slug, catalogType ) {
+		const key = queueKey( slug, catalogType );
+		const rowEl = row( slug, catalogType );
+		const snapshot = rowSnapshots.get( key );
 
 		if ( ! rowEl || ! snapshot ) {
 			return;
@@ -63,11 +73,11 @@
 		}
 
 		rowEl.classList.remove( 'is-busy' );
-		rowSnapshots.delete( slug );
+		rowSnapshots.delete( key );
 	}
 
-	function setPendingStatus( slug, phase ) {
-		const rowEl = row( slug );
+	function setPendingStatus( slug, catalogType, phase ) {
+		const rowEl = row( slug, catalogType );
 		const badge = statusBadgeEl( rowEl );
 
 		if ( ! badge ) {
@@ -94,8 +104,8 @@
 		}
 	}
 
-	function renderActions( slug, payload ) {
-		const rowEl = row( slug );
+	function renderActions( slug, catalogType, payload ) {
+		const rowEl = row( slug, catalogType );
 		const cell = actionsEl( rowEl );
 
 		if ( ! cell || ! payload || ! payload.actions ) {
@@ -105,11 +115,11 @@
 		cell.innerHTML = '';
 
 		if ( payload.actions.install ) {
-			cell.appendChild( createActionButton( 'install', slug, i18n.install, true ) );
+			cell.appendChild( createActionButton( 'install', slug, catalogType, i18n.install, true ) );
 		}
 
 		if ( payload.actions.update ) {
-			cell.appendChild( createActionButton( 'update', slug, i18n.update, true ) );
+			cell.appendChild( createActionButton( 'update', slug, catalogType, i18n.update, true ) );
 		}
 
 		if ( payload.actions.activate && payload.activate_url ) {
@@ -128,18 +138,20 @@
 		}
 	}
 
-	function createActionButton( action, slug, label, primary ) {
+	function createActionButton( action, slug, catalogType, label, primary ) {
 		const button = document.createElement( 'button' );
 		button.type = 'button';
 		button.className = primary ? 'button button-primary art-master-install-action' : 'button art-master-install-action';
 		button.dataset.action = action;
 		button.dataset.slug = slug;
+		button.dataset.catalogType = catalogType || 'plugin';
 		button.textContent = label;
 		return button;
 	}
 
 	function applyPayload( payload ) {
-		const rowEl = row( payload.slug );
+		const catalogType = payload.catalog_type || 'plugin';
+		const rowEl = row( payload.slug, catalogType );
 
 		if ( ! rowEl ) {
 			return;
@@ -169,9 +181,9 @@
 			versionEl.remove();
 		}
 
-		renderActions( payload.slug, payload );
+		renderActions( payload.slug, catalogType, payload );
 		rowEl.classList.remove( 'is-busy' );
-		rowSnapshots.delete( payload.slug );
+		rowSnapshots.delete( queueKey( payload.slug, catalogType ) );
 	}
 
 	function showNotice( message, type ) {
@@ -181,22 +193,24 @@
 		}
 
 		const notice = document.createElement( 'div' );
-		notice.className = 'notice notice-' + ( type || 'error' ) + ' is-dismissible art-master-install-inline-notice';
+		notice.className = 'notice notice-' + ( type || 'error' ) + ' is-dismissible inline art-master-install-inline-notice';
 		const paragraph = document.createElement( 'p' );
 		paragraph.textContent = message;
 		notice.appendChild( paragraph );
 		container.prepend( notice );
 	}
 
-	function enqueue( slug, action ) {
-		if ( queuedSlugs.has( slug ) ) {
+	function enqueue( slug, catalogType, action ) {
+		const key = queueKey( slug, catalogType );
+
+		if ( queuedKeys.has( key ) ) {
 			return;
 		}
 
-		queuedSlugs.add( slug );
-		snapshotRow( slug );
-		queue.push( { slug: slug, action: action } );
-		setPendingStatus( slug, 'queued' );
+		queuedKeys.add( key );
+		snapshotRow( slug, catalogType );
+		queue.push( { slug: slug, catalogType: catalogType || 'plugin', action: action } );
+		setPendingStatus( slug, catalogType, 'queued' );
 		processQueue();
 	}
 
@@ -217,13 +231,16 @@
 
 	async function runJob( job ) {
 		const phase = job.action === 'update' ? 'updating' : 'installing';
-		setPendingStatus( job.slug, phase );
+		setPendingStatus( job.slug, job.catalogType, phase );
 
 		const body = new URLSearchParams();
 		body.set( 'action', config.ajaxAction );
 		body.set( 'nonce', config.nonce );
 		body.set( 'catalog_action', job.action );
 		body.set( 'slug', job.slug );
+		body.set( 'catalog_type', job.catalogType || 'plugin' );
+
+		const key = queueKey( job.slug, job.catalogType );
 
 		try {
 			const response = await fetch( config.ajaxUrl, {
@@ -236,22 +253,26 @@
 			} );
 
 			const data = await response.json();
-			queuedSlugs.delete( job.slug );
+			queuedKeys.delete( key );
 
 			if ( ! data || ! data.success ) {
 				const message = data && data.data && data.data.message ? data.data.message : i18n.genericError;
 				showNotice( message, 'error' );
-				restoreRow( job.slug );
+				restoreRow( job.slug, job.catalogType );
 				return;
 			}
 
 			if ( data.data && data.data.state ) {
 				applyPayload( data.data.state );
 			}
+
+			if ( data.data && data.data.message ) {
+				showNotice( data.data.message, 'success' );
+			}
 		} catch ( error ) {
-			queuedSlugs.delete( job.slug );
+			queuedKeys.delete( key );
 			showNotice( i18n.genericError, 'error' );
-			restoreRow( job.slug );
+			restoreRow( job.slug, job.catalogType );
 		}
 	}
 
@@ -265,12 +286,13 @@
 
 		const slug = button.dataset.slug;
 		const action = button.dataset.action;
+		const catalogType = button.dataset.catalogType || 'plugin';
 
 		if ( ! slug || ! action ) {
 			return;
 		}
 
-		enqueue( slug, action );
+		enqueue( slug, catalogType, action );
 	} );
 
 	function updateLastCheckLabel( label ) {
@@ -347,6 +369,12 @@
 
 			if ( Array.isArray( data.data.items ) ) {
 				data.data.items.forEach( function ( item ) {
+					applyPayload( item );
+				} );
+			}
+
+			if ( Array.isArray( data.data.theme_items ) ) {
+				data.data.theme_items.forEach( function ( item ) {
 					applyPayload( item );
 				} );
 			}

@@ -49,4 +49,42 @@ class Art_Master_Install_Security {
 	public static function can_update() {
 		return current_user_can( 'manage_options' ) && current_user_can( 'update_plugins' );
 	}
+
+	/**
+	 * Check if current user can install catalog themes.
+	 *
+	 * @return bool
+	 */
+	public static function can_install_themes() {
+		return current_user_can( 'manage_options' ) && current_user_can( 'install_themes' );
+	}
+
+	/**
+	 * Check if current user can update catalog themes.
+	 *
+	 * @return bool
+	 */
+	public static function can_update_themes() {
+		return current_user_can( 'manage_options' ) && current_user_can( 'update_themes' );
+	}
+
+	/**
+	 * Check if current user can activate catalog themes.
+	 *
+	 * @return bool
+	 */
+	public static function can_switch_themes() {
+		return current_user_can( 'switch_themes' );
+	}
+
+	/**
+	 * Check if current user can install and update catalog themes.
+	 *
+	 * @return bool
+	 */
+	public static function can_manage_themes() {
+		return current_user_can( 'manage_options' )
+			&& current_user_can( 'install_themes' )
+			&& current_user_can( 'update_themes' );
+	}
 }

@@ -13,6 +13,7 @@ defined( 'ABSPATH' ) || exit;
 class Art_Master_Install_Catalog_Updates {
 
 	const CRON_HOOK            = 'art_master_install_catalog_update_check';
+	const CRON_RECURRENCE      = 'daily';
 	const LAST_CHECK_TRANSIENT = 'art_mi_last_catalog_check';
 
 	/**
@@ -34,11 +35,17 @@ class Art_Master_Install_Catalog_Updates {
 	 * Schedule recurring catalog checks if missing.
 	 */
 	public static function ensure_cron_scheduled() {
+		$event = wp_get_scheduled_event( self::CRON_HOOK );
+
+		if ( $event instanceof stdClass && self::CRON_RECURRENCE !== $event->schedule ) {
+			self::clear_cron();
+		}
+
 		if ( wp_next_scheduled( self::CRON_HOOK ) ) {
 			return;
 		}
 
-		wp_schedule_event( time() + HOUR_IN_SECONDS, 'twicedaily', self::CRON_HOOK );
+		wp_schedule_event( time() + HOUR_IN_SECONDS, self::CRON_RECURRENCE, self::CRON_HOOK );
 	}
 
 	/**
@@ -96,45 +103,33 @@ class Art_Master_Install_Catalog_Updates {
 	public static function check_all( $force_refresh = true, $apply_auto_updates = false ) {
 		self::mark_checked();
 
-		$states         = Art_Master_Install_Catalog::get_all_states( $force_refresh );
-		$updates_count  = 0;
-		$updated_slugs  = array();
-		$payload_items  = array();
+		$plugin_result = self::collect_catalog_payload(
+			Art_Master_Install_Catalog::get_all_states( $force_refresh ),
+			Art_Master_Install_Catalog::CATALOG_TYPE,
+			$apply_auto_updates
+		);
 
-		foreach ( $states as $state ) {
-			if ( ! empty( $state['update_available'] ) ) {
-				++$updates_count;
+		$theme_result = self::collect_catalog_payload(
+			Art_Master_Install_Theme_Catalog::get_all_states( $force_refresh ),
+			Art_Master_Install_Theme_Catalog::CATALOG_TYPE,
+			$apply_auto_updates
+		);
 
-				if ( $apply_auto_updates && Art_Master_Install_Settings::should_auto_update_catalog() ) {
-					$update_result = Art_Master_Install_Installer::install_from_github( (string) $state['slug'], true );
-
-					if ( ! is_wp_error( $update_result ) ) {
-						$item = Art_Master_Install_Catalog::get_item( (string) $state['slug'] );
-						if ( is_array( $item ) && ! empty( $item['github'] ) ) {
-							Art_Master_Install_Github::clear_release_cache( (string) $item['github'] );
-						}
-
-						$fresh_state = Art_Master_Install_Catalog::get_item_state( (string) $state['slug'], true );
-						if ( is_array( $fresh_state ) ) {
-							$state = $fresh_state;
-						}
-
-						$updated_slugs[] = (string) $state['slug'];
-					}
-				}
-			}
-
-			$payload_items[] = Art_Master_Install_Catalog_UI::get_client_payload( $state );
-		}
-
-		$master_state = Art_Master_Install_Updater::get_self_update_state( $force_refresh );
+		$updates_count = $plugin_result['updates_count'] + $theme_result['updates_count'];
+		$updated_slugs = array_merge( $plugin_result['updated_slugs'], $theme_result['updated_slugs'] );
+		$master_state  = Art_Master_Install_Updater::get_self_update_state( $force_refresh );
 
 		return array(
-			'items'           => $payload_items,
+			'items'           => $plugin_result['payload_items'],
+			'theme_items'     => $theme_result['payload_items'],
 			'updates_count'   => $updates_count,
 			'updated_slugs'   => $updated_slugs,
 			'last_checked'    => self::get_last_check_label(),
-			'message'         => self::build_check_message( $updates_count, $updated_slugs, $master_state ),
+			'message'         => self::build_check_message(
+				$plugin_result,
+				$theme_result,
+				$master_state
+			),
 			'master_update'   => $master_state,
 		);
 	}
@@ -152,40 +147,140 @@ class Art_Master_Install_Catalog_Updates {
 	}
 
 	/**
-	 * @param int                  $updates_count Available updates count.
-	 * @param array<int, string>   $updated_slugs Slugs updated during this check.
+	 * Build payloads and optionally auto-update one catalog type.
+	 *
+	 * @param array<int, array<string, mixed>> $states Catalog states.
+	 * @param string                           $catalog_type plugin|theme.
+	 * @param bool                             $apply_auto_updates Whether to install available updates.
+	 * @return array{payload_items: array<int, array<string, mixed>>, updates_count: int, updated_slugs: array<int, string>}
+	 */
+	private static function collect_catalog_payload( array $states, $catalog_type, $apply_auto_updates ) {
+		$updates_count = 0;
+		$updated_slugs = array();
+		$payload_items = array();
+
+		foreach ( $states as $state ) {
+			if ( ! empty( $state['update_available'] ) ) {
+				++$updates_count;
+
+				if ( $apply_auto_updates && Art_Master_Install_Settings::should_auto_update_catalog() ) {
+					$update_result = self::apply_auto_update( $state, $catalog_type );
+
+					if ( ! is_wp_error( $update_result ) ) {
+						self::clear_item_release_cache( $state, $catalog_type );
+
+						$fresh_state = self::get_fresh_item_state( (string) $state['slug'], $catalog_type, true );
+						if ( is_array( $fresh_state ) ) {
+							$state = $fresh_state;
+						}
+
+						$updated_slugs[] = (string) $state['slug'];
+					}
+				}
+			}
+
+			$payload_items[] = Art_Master_Install_Catalog_UI::get_client_payload( $state );
+		}
+
+		return array(
+			'payload_items' => $payload_items,
+			'updates_count' => $updates_count,
+			'updated_slugs' => $updated_slugs,
+		);
+	}
+
+	/**
+	 * @param array<string, mixed> $state Catalog item state.
+	 * @param string               $catalog_type plugin|theme.
+	 * @return true|WP_Error
+	 */
+	private static function apply_auto_update( array $state, $catalog_type ) {
+		$slug = (string) $state['slug'];
+
+		if ( Art_Master_Install_Theme_Catalog::CATALOG_TYPE === $catalog_type ) {
+			return Art_Master_Install_Theme_Installer::install_from_github( $slug, true );
+		}
+
+		return Art_Master_Install_Installer::install_from_github( $slug, true );
+	}
+
+	/**
+	 * @param array<string, mixed> $state Catalog item state.
+	 * @param string               $catalog_type plugin|theme.
+	 */
+	private static function clear_item_release_cache( array $state, $catalog_type ) {
+		if ( empty( $state['github'] ) ) {
+			return;
+		}
+
+		Art_Master_Install_Github::clear_release_cache( (string) $state['github'] );
+	}
+
+	/**
+	 * @param string $slug Catalog slug.
+	 * @param string $catalog_type plugin|theme.
+	 * @param bool   $force_refresh Whether to bypass cached GitHub release data.
+	 * @return array<string, mixed>|null
+	 */
+	private static function get_fresh_item_state( $slug, $catalog_type, $force_refresh ) {
+		if ( Art_Master_Install_Theme_Catalog::CATALOG_TYPE === $catalog_type ) {
+			return Art_Master_Install_Theme_Catalog::get_item_state( $slug, $force_refresh );
+		}
+
+		return Art_Master_Install_Catalog::get_item_state( $slug, $force_refresh );
+	}
+
+	/**
+	 * @param array<string, mixed> $plugin_result Plugin catalog check result.
+	 * @param array<string, mixed> $theme_result  Theme catalog check result.
 	 * @param array<string, mixed> $master_state  Master plugin update state.
 	 * @return string
 	 */
-	private static function build_check_message( $updates_count, array $updated_slugs, array $master_state ) {
-		$messages = array();
+	private static function build_check_message( array $plugin_result, array $theme_result, array $master_state ) {
+		$messages      = array();
+		$updated_count = count( $plugin_result['updated_slugs'] ) + count( $theme_result['updated_slugs'] );
 
-		if ( ! empty( $updated_slugs ) ) {
+		if ( ! empty( $plugin_result['updated_slugs'] ) ) {
 			$messages[] = sprintf(
 				/* translators: %d: number of updated plugins */
 				_n(
 					'Автоматически обновлён %d плагин из каталога.',
 					'Автоматически обновлено %d плагина из каталога.',
-					count( $updated_slugs ),
+					count( $plugin_result['updated_slugs'] ),
 					'art-master-install'
 				),
-				count( $updated_slugs )
+				count( $plugin_result['updated_slugs'] )
 			);
 		}
 
-		if ( $updates_count > 0 ) {
+		if ( ! empty( $theme_result['updated_slugs'] ) ) {
+			$messages[] = sprintf(
+				/* translators: %d: number of updated themes */
+				_n(
+					'Автоматически обновлена %d тема из каталога.',
+					'Автоматически обновлено %d тем из каталога.',
+					count( $theme_result['updated_slugs'] ),
+					'art-master-install'
+				),
+				count( $theme_result['updated_slugs'] )
+			);
+		}
+
+		$available_count = (int) $plugin_result['updates_count'] + (int) $theme_result['updates_count'];
+
+		if ( $available_count > 0 ) {
 			$messages[] = sprintf(
 				/* translators: %d: number of available updates */
 				_n(
-					'Доступно обновление для %d плагина из каталога.',
-					'Доступно обновления для %d плагинов из каталога.',
-					$updates_count,
+					'Доступно обновление для %d позиции каталога.',
+					'Доступно обновления для %d позиций каталога.',
+					$available_count,
 					'art-master-install'
 				),
-				$updates_count
+				$available_count
 			);
-		} elseif ( empty( $updated_slugs ) ) {
-			$messages[] = __( 'Все плагины каталога актуальны.', 'art-master-install' );
+		} elseif ( 0 === $updated_count ) {
+			$messages[] = __( 'Все плагины и темы каталога актуальны.', 'art-master-install' );
 		}
 
 		if ( ! empty( $master_state['update_available'] ) ) {

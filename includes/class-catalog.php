@@ -12,6 +12,8 @@ defined( 'ABSPATH' ) || exit;
  */
 class Art_Master_Install_Catalog {
 
+	const CATALOG_TYPE = 'plugin';
+
 	/**
 	 * Registered catalog items keyed by slug.
 	 *
@@ -27,14 +29,6 @@ class Art_Master_Install_Catalog {
 				'zip_name'    => 'art-starter.zip',
 				'plugin_file' => 'art-starter/art-starter.php',
 			),
-			'art-editor'  => array(
-				'slug'        => 'art-editor',
-				'name'        => 'ART Editor',
-				'description' => __( 'Простой способ создавать лендинги с помощью нейросетей и редактировать их визуально, через понятный редактор HTML-блоков', 'art-master-install' ),
-				'github'      => 'artbashlykov/art-editor',
-				'zip_name'    => 'art-editor.zip',
-				'plugin_file' => 'art-editor/art-editor.php',
-			),
 			'art-lms'     => array(
 				'slug'        => 'art-lms',
 				'name'        => 'ART LMS',
@@ -42,6 +36,14 @@ class Art_Master_Install_Catalog {
 				'github'      => 'artbashlykov/art-lms',
 				'zip_name'    => 'art-lms.zip',
 				'plugin_file' => 'art-lms/art-lms.php',
+			),
+			'art-editor'  => array(
+				'slug'        => 'art-editor',
+				'name'        => 'ART Editor',
+				'description' => __( 'Простой способ создавать лендинги с помощью нейросетей и редактировать их визуально, через понятный редактор HTML-блоков', 'art-master-install' ),
+				'github'      => 'artbashlykov/art-editor',
+				'zip_name'    => 'art-editor.zip',
+				'plugin_file' => 'art-editor/art-editor.php',
 			),
 		);
 
@@ -99,6 +101,7 @@ class Art_Master_Install_Catalog {
 		return array_merge(
 			$item,
 			array(
+				'catalog_type'      => self::CATALOG_TYPE,
 				'status'            => $status,
 				'is_installed'      => $is_installed,
 				'is_active'         => 'active' === $status,
