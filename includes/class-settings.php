@@ -72,8 +72,8 @@ class Art_Master_Install_Settings {
 	public static function get_defaults() {
 		return array(
 			'auto_activate'       => 'yes',
-			'auto_update_catalog' => 'no',
-			'auto_update_self'    => 'no',
+			'auto_update_catalog' => 'yes',
+			'auto_update_self'    => 'yes',
 		);
 	}
 
@@ -104,7 +104,7 @@ class Art_Master_Install_Settings {
 	 * @return bool
 	 */
 	public static function should_auto_update_catalog() {
-		return 'yes' === ( self::get()['auto_update_catalog'] ?? 'no' );
+		return 'yes' === ( self::get()['auto_update_catalog'] ?? 'yes' );
 	}
 
 	/**
@@ -113,7 +113,7 @@ class Art_Master_Install_Settings {
 	 * @return bool
 	 */
 	public static function should_auto_update_self() {
-		return 'yes' === ( self::get()['auto_update_self'] ?? 'no' );
+		return 'yes' === ( self::get()['auto_update_self'] ?? 'yes' );
 	}
 
 	/**

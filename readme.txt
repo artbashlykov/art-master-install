@@ -4,7 +4,7 @@ Tags: installer, github, art, catalog
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.6.0
+Stable tag: 1.6.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -33,6 +33,9 @@ It helps you install and update ART extensions from public GitHub releases witho
 ART Starter, ART Editor, ART LMS, and ART Theme. More ART extensions will be added in future releases.
 
 == Changelog ==
+
+= 1.6.1 =
+* Settings: auto-update for catalog and ART Master Install enabled by default.
 
 = 1.6.0 =
 * Каталог тем: установка, обновление и активация ART Theme из GitHub.
