@@ -151,7 +151,6 @@ class Art_Master_Install_Github {
 
 		$release = array(
 			'tag_name' => isset( $body['tag_name'] ) ? (string) $body['tag_name'] : '',
-			'html_url' => isset( $body['html_url'] ) ? (string) $body['html_url'] : '',
 		);
 
 		self::store_release_cache( $cache_key, $release, false );
@@ -182,7 +181,6 @@ class Art_Master_Install_Github {
 	private static function store_release_cache( $cache_key, array $release, $failed ) {
 		$payload = array(
 			'tag_name'  => isset( $release['tag_name'] ) ? (string) $release['tag_name'] : '',
-			'html_url'  => isset( $release['html_url'] ) ? (string) $release['html_url'] : '',
 			'cached_at' => time(),
 			'failed'    => $failed,
 		);
@@ -215,7 +213,6 @@ class Art_Master_Install_Github {
 	private static function normalize_cached_release( array $cached ) {
 		return array(
 			'tag_name' => isset( $cached['tag_name'] ) ? (string) $cached['tag_name'] : '',
-			'html_url' => isset( $cached['html_url'] ) ? (string) $cached['html_url'] : '',
 		);
 	}
 

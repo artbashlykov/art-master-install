@@ -11,7 +11,7 @@ defined( 'ABSPATH' ) || exit;
 
 ?>
 <div class="wrap art-master-install-admin">
-	<hr class="wp-header-end art-master-install-header-end">
+	<hr class="wp-header-end">
 
 	<div class="art-master-install-page-head">
 		<h1><?php esc_html_e( 'Каталог Арта', 'art-master-install' ); ?></h1>
@@ -26,8 +26,6 @@ defined( 'ABSPATH' ) || exit;
 	</div>
 
 	<div id="art-master-install-notices" class="art-master-install-notices" aria-live="polite"></div>
-
-	<?php Art_Master_Install_Admin_Settings::render_notices(); ?>
 
 	<?php if ( ! Art_Master_Install_Security::can_manage() || ! Art_Master_Install_Security::can_manage_themes() ) : ?>
 		<div class="notice notice-warning inline">

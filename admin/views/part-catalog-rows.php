@@ -2,7 +2,7 @@
 /**
  * Catalog table rows partial.
  *
- * Expected variables: $catalog_items, $catalog_type, $empty_message, $item_column_label.
+ * Expected variables: $catalog_items, $catalog_type, $empty_message.
  *
  * @package Art_Master_Install
  */
@@ -10,7 +10,6 @@
 defined( 'ABSPATH' ) || exit;
 
 $catalog_type       = isset( $catalog_type ) ? sanitize_key( (string) $catalog_type ) : Art_Master_Install_Catalog::CATALOG_TYPE;
-$item_column_label  = isset( $item_column_label ) ? (string) $item_column_label : __( 'Плагин', 'art-master-install' );
 $empty_message      = isset( $empty_message ) ? (string) $empty_message : __( 'Плагины пока не добавлены в каталог.', 'art-master-install' );
 $is_theme_catalog   = 'theme' === $catalog_type;
 $can_install        = $is_theme_catalog ? Art_Master_Install_Security::can_install_themes() : Art_Master_Install_Security::can_install();

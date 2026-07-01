@@ -87,7 +87,6 @@
 		const labels = {
 			queued: i18n.queued,
 			installing: i18n.installing,
-			activating: i18n.activating,
 			updating: i18n.updating,
 		};
 
@@ -295,46 +294,6 @@
 		enqueue( slug, catalogType, action );
 	} );
 
-	function updateLastCheckLabel( label ) {
-		const element = document.getElementById( 'art-master-install-last-check' );
-		if ( element && label ) {
-			element.textContent = label;
-		}
-	}
-
-	function updateMasterUpdatePanel( masterUpdate ) {
-		const panel = document.getElementById( 'art-master-install-self-update' );
-		if ( ! panel || ! masterUpdate ) {
-			return;
-		}
-
-		const status = panel.querySelector( '.art-master-install-self-update-status' );
-		if ( status ) {
-			status.textContent = i18n.selfUpdateStatus
-				.replace( '%1$s', masterUpdate.installed_version )
-				.replace( '%2$s', masterUpdate.latest_version || '—' );
-		}
-
-		let notice = panel.querySelector( '.art-master-install-self-update-notice' );
-		if ( masterUpdate.update_available ) {
-			if ( ! notice ) {
-				notice = document.createElement( 'p' );
-				notice.className = 'art-master-install-self-update-notice';
-				panel.appendChild( notice );
-			}
-
-			notice.innerHTML = '';
-			notice.appendChild( document.createTextNode( i18n.selfUpdateAvailable + ' ' ) );
-
-			const link = document.createElement( 'a' );
-			link.href = masterUpdate.updates_url || '#';
-			link.textContent = i18n.goToUpdates;
-			notice.appendChild( link );
-		} else if ( notice ) {
-			notice.remove();
-		}
-	}
-
 	async function checkUpdates() {
 		const button = document.getElementById( 'art-master-install-check-updates' );
 		if ( ! button || button.disabled ) {
@@ -367,21 +326,19 @@
 				return;
 			}
 
-			if ( Array.isArray( data.data.items ) ) {
-				data.data.items.forEach( function ( item ) {
-					applyPayload( item );
-				} );
+			try {
+				sessionStorage.setItem(
+					'artMasterInstallCheckNotice',
+					JSON.stringify( {
+						message: data.data.message || '',
+						type: data.data.updates_count > 0 ? 'warning' : 'success',
+					} )
+				);
+			} catch ( storageError ) {
+				// sessionStorage unavailable — still reload to show fresh versions.
 			}
 
-			if ( Array.isArray( data.data.theme_items ) ) {
-				data.data.theme_items.forEach( function ( item ) {
-					applyPayload( item );
-				} );
-			}
-
-			updateLastCheckLabel( data.data.last_checked );
-			updateMasterUpdatePanel( data.data.master_update );
-			showNotice( data.data.message, data.data.updates_count > 0 ? 'warning' : 'success' );
+			window.location.reload();
 		} catch ( error ) {
 			showNotice( i18n.checkError, 'error' );
 		} finally {
@@ -397,5 +354,18 @@
 			event.preventDefault();
 			checkUpdates();
 		} );
+	}
+
+	try {
+		const rawNotice = sessionStorage.getItem( 'artMasterInstallCheckNotice' );
+		if ( rawNotice ) {
+			sessionStorage.removeItem( 'artMasterInstallCheckNotice' );
+			const notice = JSON.parse( rawNotice );
+			if ( notice && notice.message ) {
+				showNotice( notice.message, notice.type || 'success' );
+			}
+		}
+	} catch ( noticeError ) {
+		sessionStorage.removeItem( 'artMasterInstallCheckNotice' );
 	}
 }() );

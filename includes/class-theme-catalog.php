@@ -88,7 +88,6 @@ class Art_Master_Install_Theme_Catalog {
 				'installed_version' => $installed_version,
 				'latest_version'    => $latest_version,
 				'update_available'  => $update_available,
-				'zip_url'           => Art_Master_Install_Github::get_release_zip_url( $item['github'], $item['zip_name'] ),
 			)
 		);
 	}

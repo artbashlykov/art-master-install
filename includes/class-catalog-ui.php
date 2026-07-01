@@ -56,26 +56,6 @@ class Art_Master_Install_Catalog_UI {
 	}
 
 	/**
-	 * Pending status badge for queued or in-progress actions.
-	 *
-	 * @param string $phase queued|installing|activating|updating.
-	 * @return array{class: string, label: string}
-	 */
-	public static function get_pending_status_badge( $phase ) {
-		$labels = array(
-			'queued'     => __( 'В очереди…', 'art-master-install' ),
-			'installing' => __( 'Устанавливается…', 'art-master-install' ),
-			'activating' => __( 'Активируется…', 'art-master-install' ),
-			'updating'   => __( 'Обновляется…', 'art-master-install' ),
-		);
-
-		return array(
-			'class' => 'art-master-install-status art-master-install-status--pending',
-			'label' => $labels[ $phase ] ?? $labels['installing'],
-		);
-	}
-
-	/**
 	 * Serialize catalog row state for AJAX responses.
 	 *
 	 * @param array<string, mixed> $item Catalog item state.
@@ -83,29 +63,16 @@ class Art_Master_Install_Catalog_UI {
 	 */
 	public static function get_client_payload( array $item ) {
 		$badge = self::get_status_badge( $item );
-		$type  = self::get_catalog_type( $item );
 
-		$payload = array(
+		return array(
 			'slug'              => (string) $item['slug'],
-			'name'              => (string) $item['name'],
-			'catalog_type'      => $type,
+			'catalog_type'      => self::get_catalog_type( $item ),
 			'status'            => (string) $item['status'],
 			'installed_version' => (string) $item['installed_version'],
-			'latest_version'    => (string) $item['latest_version'],
-			'update_available'  => ! empty( $item['update_available'] ),
-			'is_active'         => ! empty( $item['is_active'] ),
 			'status_class'      => $badge['class'],
 			'status_label'      => $badge['label'],
 			'actions'           => self::get_actions_config( $item ),
 		);
-
-		if ( self::is_theme_item( $item ) ) {
-			$payload['stylesheet'] = (string) $item['stylesheet'];
-		} else {
-			$payload['plugin_file'] = (string) $item['plugin_file'];
-		}
-
-		return $payload;
 	}
 
 	/**
