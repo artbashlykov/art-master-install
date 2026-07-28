@@ -48,7 +48,7 @@ class Art_Master_Install_Installer {
 
 		if ( false === $result ) {
 			$messages = method_exists( $skin, 'get_error_messages' ) ? $skin->get_error_messages() : array();
-			$message  = ! empty( $messages ) ? implode( ' ', $messages ) : __( 'Не удалось установить плагин из GitHub.', 'art-master-install' );
+			$message  = ! empty( $messages ) ? implode( ' ', $messages ) : __( 'Не удалось установить плагин.', 'art-master-install' );
 
 			return new WP_Error( 'art_master_install_install_failed', $message );
 		}

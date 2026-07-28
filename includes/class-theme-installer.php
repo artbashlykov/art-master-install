@@ -48,7 +48,7 @@ class Art_Master_Install_Theme_Installer {
 
 		if ( false === $result ) {
 			$messages = method_exists( $skin, 'get_error_messages' ) ? $skin->get_error_messages() : array();
-			$message  = ! empty( $messages ) ? implode( ' ', $messages ) : __( 'Не удалось установить тему из GitHub.', 'art-master-install' );
+			$message  = ! empty( $messages ) ? implode( ' ', $messages ) : __( 'Не удалось установить тему.', 'art-master-install' );
 
 			return new WP_Error( 'art_master_install_theme_install_failed', $message );
 		}

@@ -104,8 +104,8 @@ defined( 'ABSPATH' ) || exit;
 			<p class="description art-master-install-self-update-status">
 				<?php
 				printf(
-					/* translators: 1: installed version, 2: latest GitHub version or dash */
-					esc_html__( 'Установленная версия: %1$s. Последний релиз на GitHub: %2$s.', 'art-master-install' ),
+					/* translators: 1: installed version, 2: latest release version or dash */
+					esc_html__( 'Установленная версия: %1$s. Последний релиз: %2$s.', 'art-master-install' ),
 					esc_html( (string) $master_update['installed_version'] ),
 					'' !== (string) $master_update['latest_version']
 						? esc_html( (string) $master_update['latest_version'] )
@@ -159,7 +159,7 @@ defined( 'ABSPATH' ) || exit;
 								<?php esc_html_e( 'Автоматически обновлять плагины и темы из каталога', 'art-master-install' ); ?>
 							</label>
 							<p class="description">
-								<?php esc_html_e( 'ART Master Install будет проверять GitHub 1 раз в сутки и устанавливать новые версии установленных плагинов и тем каталога.', 'art-master-install' ); ?>
+								<?php esc_html_e( 'ART Master Install будет проверять обновления 1 раз в сутки и устанавливать новые версии установленных плагинов и тем каталога.', 'art-master-install' ); ?>
 							</p>
 						</div>
 						<div class="art-master-install-setting-option">
@@ -194,7 +194,7 @@ defined( 'ABSPATH' ) || exit;
 								<?php esc_html_e( 'Удалять все данные плагина при удалении плагина', 'art-master-install' ); ?>
 							</label>
 							<p class="description">
-								<?php esc_html_e( 'Если включено, при удалении ART Master Install через экран «Плагины» будут удалены настройки каталога, кэш GitHub, служебные transients и запланированные проверки обновлений. Плагины и темы, установленные через каталог, не удаляются.', 'art-master-install' ); ?>
+								<?php esc_html_e( 'Если включено, при удалении ART Master Install через экран «Плагины» будут удалены настройки каталога, служебный кэш, transients и запланированные проверки обновлений. Плагины и темы, установленные через каталог, не удаляются.', 'art-master-install' ); ?>
 							</p>
 						</div>
 					</td>

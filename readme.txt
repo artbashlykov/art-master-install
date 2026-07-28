@@ -1,20 +1,20 @@
 === ART Master Install ===
 Contributors: artbashlykov
-Tags: installer, github, art, catalog
+Tags: installer, art, catalog
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.6.2
+Stable tag: 1.6.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Install and manage ART WordPress extensions from public GitHub repositories.
+Install and manage ART WordPress extensions from the ART catalog.
 
 == Description ==
 
-ART Master Install is a hub for installing and updating other ART extensions from public GitHub repositories.
+ART Master Install is a hub for installing and updating other ART extensions.
 
-Open **Settings → Каталог Арта** to install or update ART Starter, ART Editor, ART Theme, and other catalog items in one click from GitHub releases.
+Open **Settings → Каталог Арта** to install or update ART Starter, ART Editor, ART Theme, and other catalog items in one click.
 
 == Installation ==
 
@@ -26,13 +26,16 @@ Open **Settings → Каталог Арта** to install or update ART Starter, 
 
 = What does ART Master Install do? =
 
-It helps you install and update ART extensions from public GitHub releases without manual zip downloads.
+It helps you install and update ART extensions from the ART catalog without manual zip downloads.
 
 = Which items are in the catalog? =
 
 ART Starter, ART Editor, ART LMS, and ART Theme. More ART extensions will be added in future releases.
 
 == Changelog ==
+
+= 1.6.3 =
+* UI: removed GitHub mentions from admin notices and settings descriptions.
 
 = 1.6.2 =
 * Каталог: страница перезагружается после «Проверить обновления» — версии и статусы видны сразу.

@@ -158,13 +158,13 @@ class Art_Master_Install_Admin_Actions {
 			if ( self::is_theme_catalog_type( $catalog_type ) ) {
 				$message = sprintf(
 					/* translators: %s: catalog item name */
-					__( 'Тема «%s» обновлена из GitHub.', 'art-master-install' ),
+					__( 'Тема «%s» обновлена.', 'art-master-install' ),
 					(string) $fresh_state['name']
 				);
 			} else {
 				$message = sprintf(
 					/* translators: %s: catalog item name */
-					__( 'Плагин «%s» обновлён из GitHub.', 'art-master-install' ),
+					__( 'Плагин «%s» обновлён.', 'art-master-install' ),
 					(string) $fresh_state['name']
 				);
 			}
@@ -185,13 +185,13 @@ class Art_Master_Install_Admin_Actions {
 		} elseif ( self::is_theme_catalog_type( $catalog_type ) ) {
 			$message = sprintf(
 				/* translators: %s: catalog item name */
-				__( 'Тема «%s» установлена из GitHub.', 'art-master-install' ),
+				__( 'Тема «%s» установлена.', 'art-master-install' ),
 				(string) $fresh_state['name']
 			);
 		} else {
 			$message = sprintf(
 				/* translators: %s: catalog item name */
-				__( 'Плагин «%s» установлен из GitHub.', 'art-master-install' ),
+				__( 'Плагин «%s» установлен.', 'art-master-install' ),
 				(string) $fresh_state['name']
 			);
 		}
