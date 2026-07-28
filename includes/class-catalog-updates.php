@@ -246,7 +246,7 @@ class Art_Master_Install_Catalog_Updates {
 	 * @param array<string, mixed> $plugin_result Plugin catalog check result.
 	 * @param array<string, mixed> $theme_result  Theme catalog check result.
 	 * @param array<string, mixed> $master_state  Master plugin update state.
-	 * @param array{ok: int, errors: int} $fetch_stats GitHub fetch counters.
+	 * @param array{ok: int, errors: int, last_error?: string} $fetch_stats GitHub fetch counters.
 	 * @return string
 	 */
 	private static function build_check_message( array $plugin_result, array $theme_result, array $master_state, array $fetch_stats ) {
@@ -256,6 +256,16 @@ class Art_Master_Install_Catalog_Updates {
 		$fetch_errors  = isset( $fetch_stats['errors'] ) ? (int) $fetch_stats['errors'] : 0;
 
 		if ( $fetch_errors > 0 && 0 === $fetch_ok ) {
+			$detail = isset( $fetch_stats['last_error'] ) ? trim( (string) $fetch_stats['last_error'] ) : '';
+
+			if ( '' !== $detail ) {
+				return sprintf(
+					/* translators: %s: technical error detail */
+					__( 'Не удалось получить данные об обновлениях (%s).', 'art-master-install' ),
+					$detail
+				);
+			}
+
 			return __( 'Не удалось получить данные об обновлениях. Попробуйте ещё раз через минуту.', 'art-master-install' );
 		}
 
