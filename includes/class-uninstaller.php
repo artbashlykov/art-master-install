@@ -57,6 +57,7 @@ class Art_Master_Install_Uninstaller {
 		global $wpdb;
 
 		delete_option( self::PUC_OPTION );
+		delete_site_option( 'art_master_install_release_cache_epoch' );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Bulk cleanup during uninstall.
 		$wpdb->query(

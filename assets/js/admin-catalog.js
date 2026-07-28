@@ -479,6 +479,52 @@
 		enqueue( slug, catalogType, action );
 	} );
 
+	const NOTICE_STORAGE_KEY = 'artMasterInstallNotice';
+
+	function persistNotice( message, type ) {
+		if ( ! message ) {
+			return;
+		}
+
+		try {
+			window.sessionStorage.setItem(
+				NOTICE_STORAGE_KEY,
+				JSON.stringify(
+					{
+						message: message,
+						type: type || 'success',
+					}
+				)
+			);
+		} catch ( error ) {
+			// Ignore storage errors (private mode, quota, etc.).
+		}
+	}
+
+	function restorePersistedNotice() {
+		let raw = '';
+
+		try {
+			raw = window.sessionStorage.getItem( NOTICE_STORAGE_KEY ) || '';
+			window.sessionStorage.removeItem( NOTICE_STORAGE_KEY );
+		} catch ( error ) {
+			return;
+		}
+
+		if ( ! raw ) {
+			return;
+		}
+
+		try {
+			const payload = JSON.parse( raw );
+			if ( payload && payload.message ) {
+				showNotice( payload.message, payload.type || 'success' );
+			}
+		} catch ( error ) {
+			// Ignore invalid payloads.
+		}
+	}
+
 	async function checkUpdates() {
 		const button = document.getElementById( 'art-master-install-check-updates' );
 		if ( ! button || button.disabled ) {
@@ -504,10 +550,34 @@
 				body: body.toString(),
 			} );
 
-			const data = await response.json();
+			let data = null;
+
+			try {
+				data = await response.json();
+			} catch ( parseError ) {
+				showNotice( i18n.checkError, 'error' );
+				return;
+			}
 
 			if ( ! data || ! data.success || ! data.data ) {
-				showNotice( i18n.checkError, 'error' );
+				const message = data && data.data && data.data.message
+					? data.data.message
+					: i18n.checkError;
+				showNotice( message, 'error' );
+				return;
+			}
+
+			const noticeType = data.data.fetch_ok === 0 && data.data.fetch_errors > 0
+				? 'error'
+				: ( data.data.updates_count > 0 ? 'warning' : 'success' );
+
+			if ( data.data.message ) {
+				persistNotice( data.data.message, noticeType );
+			}
+
+			// Soft reload after a forced check: PHP re-renders from the new cache epoch.
+			if ( data.data.reload ) {
+				window.location.reload();
 				return;
 			}
 
@@ -525,7 +595,7 @@
 
 			updateLastCheckLabel( data.data.last_checked );
 			updateMasterUpdatePanel( data.data.master_update );
-			showNotice( data.data.message, data.data.updates_count > 0 ? 'warning' : 'success' );
+			showNotice( data.data.message, noticeType );
 		} catch ( error ) {
 			showNotice( i18n.checkError, 'error' );
 		} finally {
@@ -550,4 +620,6 @@
 			updateSelf();
 		} );
 	}
+
+	restorePersistedNotice();
 }() );

@@ -12,8 +12,23 @@ defined( 'ABSPATH' ) || exit;
  */
 class Art_Master_Install_Github {
 
-	const CACHE_TTL         = 21600; // 6 hours.
-	const CACHE_TTL_FAILURE = 900; // 15 minutes.
+	const CACHE_TTL          = 21600; // 6 hours.
+	const CACHE_TTL_FAILURE  = 900; // 15 minutes.
+	const CACHE_EPOCH_OPTION = 'art_master_install_release_cache_epoch';
+
+	/**
+	 * Successful API fetches in the current request.
+	 *
+	 * @var int
+	 */
+	private static $fetch_ok = 0;
+
+	/**
+	 * Failed API fetches in the current request.
+	 *
+	 * @var int
+	 */
+	private static $fetch_errors = 0;
 
 	/**
 	 * GitHub personal access token (optional, raises API rate limits).
@@ -58,6 +73,24 @@ class Art_Master_Install_Github {
 		}
 
 		return $headers;
+	}
+
+	/**
+	 * Reset per-request fetch counters before a catalog check.
+	 */
+	public static function reset_fetch_stats() {
+		self::$fetch_ok     = 0;
+		self::$fetch_errors = 0;
+	}
+
+	/**
+	 * @return array{ok: int, errors: int}
+	 */
+	public static function get_fetch_stats() {
+		return array(
+			'ok'     => self::$fetch_ok,
+			'errors' => self::$fetch_errors,
+		);
 	}
 
 	/**
@@ -114,14 +147,11 @@ class Art_Master_Install_Github {
 		$cache_key = self::get_cache_key( $github_repo );
 		$cached    = get_site_transient( $cache_key );
 
-		// Never trust cache on forced refresh — object caches can return a stale
-		// value even after delete_site_transient(), which would skip the API call.
-		if ( ! $force_refresh && is_array( $cached ) && self::is_cache_fresh( $cached ) ) {
+		// Forced refresh never reads cache. Cache keys include an epoch that
+		// invalidate_all_release_caches() bumps, so object-cache stale hits after
+		// delete_site_transient() cannot resurrect an old generation.
+		if ( ! $force_refresh && self::is_usable_cache( $cached ) ) {
 			return self::normalize_cached_release( $cached );
-		}
-
-		if ( $force_refresh ) {
-			delete_site_transient( $cache_key );
 		}
 
 		$response = wp_remote_get(
@@ -133,25 +163,24 @@ class Art_Master_Install_Github {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			self::store_release_cache( $cache_key, array(), true );
-			return is_array( $cached ) ? self::normalize_cached_release( $cached ) : array();
+			return self::handle_fetch_failure( $cache_key, $cached );
 		}
 
 		$code = (int) wp_remote_retrieve_response_code( $response );
 		if ( 200 !== $code ) {
-			self::store_release_cache( $cache_key, array(), true );
-			return is_array( $cached ) ? self::normalize_cached_release( $cached ) : array();
+			return self::handle_fetch_failure( $cache_key, $cached );
 		}
 
 		$body = json_decode( (string) wp_remote_retrieve_body( $response ), true );
 
-		if ( ! is_array( $body ) ) {
-			self::store_release_cache( $cache_key, array(), true );
-			return is_array( $cached ) ? self::normalize_cached_release( $cached ) : array();
+		if ( ! is_array( $body ) || empty( $body['tag_name'] ) ) {
+			return self::handle_fetch_failure( $cache_key, $cached );
 		}
 
+		++self::$fetch_ok;
+
 		$release = array(
-			'tag_name' => isset( $body['tag_name'] ) ? (string) $body['tag_name'] : '',
+			'tag_name' => (string) $body['tag_name'],
 		);
 
 		self::store_release_cache( $cache_key, $release, false );
@@ -160,26 +189,18 @@ class Art_Master_Install_Github {
 	}
 
 	/**
-	 * Drop cached release data for every catalog plugin/theme repository.
+	 * Invalidate every release cache by bumping the key epoch.
+	 *
+	 * Prefer this over delete_site_transient() loops: object caches may keep
+	 * serving a deleted key until expiry, which previously made "Проверить
+	 * обновления" reuse stale release versions.
 	 */
 	public static function clear_catalog_release_caches() {
-		foreach ( Art_Master_Install_Catalog::get_items() as $item ) {
-			if ( ! empty( $item['github'] ) ) {
-				self::clear_release_cache( (string) $item['github'] );
-			}
-		}
-
-		foreach ( Art_Master_Install_Theme_Catalog::get_items() as $item ) {
-			if ( ! empty( $item['github'] ) ) {
-				self::clear_release_cache( (string) $item['github'] );
-			}
-		}
-
-		self::clear_release_cache( Art_Master_Install_Updater::GITHUB_REPO );
+		self::bump_cache_epoch();
 	}
 
 	/**
-	 * Drop cached release data for a repository.
+	 * Drop cached release data for a repository (current epoch only).
 	 *
 	 * @param string $github_repo Owner/repo.
 	 */
@@ -194,6 +215,24 @@ class Art_Master_Install_Github {
 	}
 
 	/**
+	 * @param string                    $cache_key Transient key.
+	 * @param array<string, mixed>|mixed $cached    Previous cache value.
+	 * @return array<string, string>
+	 */
+	private static function handle_fetch_failure( $cache_key, $cached ) {
+		++self::$fetch_errors;
+
+		// Never overwrite a known-good release with an empty failure payload.
+		if ( is_array( $cached ) && ! empty( $cached['tag_name'] ) ) {
+			return self::normalize_cached_release( $cached );
+		}
+
+		self::store_release_cache( $cache_key, array(), true );
+
+		return array();
+	}
+
+	/**
 	 * @param string               $cache_key Transient key.
 	 * @param array<string, mixed> $release   Release payload.
 	 * @param bool                 $failed    Whether the fetch failed.
@@ -202,12 +241,33 @@ class Art_Master_Install_Github {
 		$payload = array(
 			'tag_name'  => isset( $release['tag_name'] ) ? (string) $release['tag_name'] : '',
 			'cached_at' => time(),
-			'failed'    => $failed,
+			'failed'    => (bool) $failed,
 		);
 
 		$ttl = $failed ? self::CACHE_TTL_FAILURE : self::CACHE_TTL;
 
 		set_site_transient( $cache_key, $payload, $ttl );
+	}
+
+	/**
+	 * @param mixed $cached Cached payload.
+	 * @return bool
+	 */
+	private static function is_usable_cache( $cached ) {
+		if ( ! is_array( $cached ) ) {
+			return false;
+		}
+
+		if ( ! self::is_cache_fresh( $cached ) ) {
+			return false;
+		}
+
+		// Empty failure markers must not block a retry forever.
+		if ( ! empty( $cached['failed'] ) && empty( $cached['tag_name'] ) ) {
+			return false;
+		}
+
+		return ! empty( $cached['tag_name'] );
 	}
 
 	/**
@@ -237,11 +297,33 @@ class Art_Master_Install_Github {
 	}
 
 	/**
+	 * Bump release-cache epoch so previous transient keys become unreachable.
+	 */
+	private static function bump_cache_epoch() {
+		$epoch = (int) get_site_option( self::CACHE_EPOCH_OPTION, 1 );
+
+		if ( $epoch < 1 ) {
+			$epoch = 1;
+		}
+
+		update_site_option( self::CACHE_EPOCH_OPTION, $epoch + 1 );
+	}
+
+	/**
+	 * @return int
+	 */
+	private static function get_cache_epoch() {
+		$epoch = (int) get_site_option( self::CACHE_EPOCH_OPTION, 1 );
+
+		return max( 1, $epoch );
+	}
+
+	/**
 	 * @param string $github_repo Owner/repo.
 	 * @return string
 	 */
 	private static function get_cache_key( $github_repo ) {
-		return 'art_mi_release_' . md5( self::sanitize_repo( $github_repo ) );
+		return 'art_mi_rel_' . self::get_cache_epoch() . '_' . md5( self::sanitize_repo( $github_repo ) );
 	}
 
 	/**

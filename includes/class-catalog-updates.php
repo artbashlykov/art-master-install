@@ -102,6 +102,7 @@ class Art_Master_Install_Catalog_Updates {
 	 */
 	public static function check_all( $force_refresh = true, $apply_auto_updates = false ) {
 		self::mark_checked();
+		Art_Master_Install_Github::reset_fetch_stats();
 
 		if ( $force_refresh ) {
 			Art_Master_Install_Github::clear_catalog_release_caches();
@@ -122,6 +123,13 @@ class Art_Master_Install_Catalog_Updates {
 		$updates_count = $plugin_result['updates_count'] + $theme_result['updates_count'];
 		$updated_slugs = array_merge( $plugin_result['updated_slugs'], $theme_result['updated_slugs'] );
 		$master_state  = Art_Master_Install_Updater::get_self_update_state( $force_refresh );
+		$fetch_stats   = Art_Master_Install_Github::get_fetch_stats();
+		$message       = self::build_check_message(
+			$plugin_result,
+			$theme_result,
+			$master_state,
+			$fetch_stats
+		);
 
 		return array(
 			'items'         => $plugin_result['payload_items'],
@@ -129,12 +137,12 @@ class Art_Master_Install_Catalog_Updates {
 			'updates_count' => $updates_count,
 			'updated_slugs' => $updated_slugs,
 			'last_checked'  => self::get_last_check_label(),
-			'message'       => self::build_check_message(
-				$plugin_result,
-				$theme_result,
-				$master_state
-			),
+			'message'       => $message,
 			'master_update' => $master_state,
+			'fetch_ok'      => (int) $fetch_stats['ok'],
+			'fetch_errors'  => (int) $fetch_stats['errors'],
+			// Soft reload keeps the table in sync even if AJAX DOM updates miss a row.
+			'reload'        => true,
 		);
 	}
 
@@ -238,11 +246,18 @@ class Art_Master_Install_Catalog_Updates {
 	 * @param array<string, mixed> $plugin_result Plugin catalog check result.
 	 * @param array<string, mixed> $theme_result  Theme catalog check result.
 	 * @param array<string, mixed> $master_state  Master plugin update state.
+	 * @param array{ok: int, errors: int} $fetch_stats GitHub fetch counters.
 	 * @return string
 	 */
-	private static function build_check_message( array $plugin_result, array $theme_result, array $master_state ) {
+	private static function build_check_message( array $plugin_result, array $theme_result, array $master_state, array $fetch_stats ) {
 		$messages      = array();
 		$updated_count = count( $plugin_result['updated_slugs'] ) + count( $theme_result['updated_slugs'] );
+		$fetch_ok      = isset( $fetch_stats['ok'] ) ? (int) $fetch_stats['ok'] : 0;
+		$fetch_errors  = isset( $fetch_stats['errors'] ) ? (int) $fetch_stats['errors'] : 0;
+
+		if ( $fetch_errors > 0 && 0 === $fetch_ok ) {
+			return __( 'Не удалось получить данные об обновлениях. Попробуйте ещё раз через минуту.', 'art-master-install' );
+		}
 
 		if ( ! empty( $plugin_result['updated_slugs'] ) ) {
 			$messages[] = sprintf(
@@ -293,6 +308,10 @@ class Art_Master_Install_Catalog_Updates {
 				__( 'Для ART Master Install доступна версия %s.', 'art-master-install' ),
 				(string) $master_state['latest_version']
 			);
+		}
+
+		if ( $fetch_errors > 0 ) {
+			$messages[] = __( 'Часть запросов к серверу обновлений не удалась — список может быть неполным.', 'art-master-install' );
 		}
 
 		return implode( ' ', $messages );

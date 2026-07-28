@@ -184,11 +184,6 @@ class Art_Master_Install_Updater {
 		$update_available  = '' !== $latest_version
 			&& version_compare( $installed_version, $latest_version, '<' );
 
-		if ( $force_refresh ) {
-			self::force_check();
-			$update_available = self::has_update_available() || $update_available;
-		}
-
 		return array(
 			'installed_version' => $installed_version,
 			'latest_version'    => $latest_version,
