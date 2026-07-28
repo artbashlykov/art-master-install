@@ -200,6 +200,43 @@
 		}
 	}
 
+	function renderSelfUpdateNotice( panel, masterUpdate ) {
+		let notice = panel.querySelector( '.art-master-install-self-update-notice' );
+
+		if ( ! masterUpdate.update_available ) {
+			if ( notice ) {
+				notice.remove();
+			}
+			return;
+		}
+
+		if ( ! notice ) {
+			notice = document.createElement( 'p' );
+			notice.className = 'art-master-install-self-update-notice';
+			panel.appendChild( notice );
+		}
+
+		notice.textContent = '';
+		notice.appendChild( document.createTextNode( i18n.selfUpdateAvailable || '' ) );
+
+		if ( false === masterUpdate.can_update ) {
+			return;
+		}
+
+		notice.appendChild( document.createTextNode( ' ' ) );
+
+		const button = document.createElement( 'button' );
+		button.type = 'button';
+		button.className = 'button button-primary art-master-install-self-update-button';
+		button.id = 'art-master-install-update-self';
+		button.textContent = i18n.updateSelf || i18n.update || '';
+		button.addEventListener( 'click', function ( event ) {
+			event.preventDefault();
+			updateSelf();
+		} );
+		notice.appendChild( button );
+	}
+
 	function updateMasterUpdatePanel( masterUpdate ) {
 		const panel = document.getElementById( 'art-master-install-self-update' );
 		if ( ! panel || ! masterUpdate ) {
@@ -213,23 +250,80 @@
 				.replace( '%2$s', masterUpdate.latest_version || '—' );
 		}
 
-		let notice = panel.querySelector( '.art-master-install-self-update-notice' );
-		if ( masterUpdate.update_available ) {
-			if ( ! notice ) {
-				notice = document.createElement( 'p' );
-				notice.className = 'art-master-install-self-update-notice';
-				panel.appendChild( notice );
+		renderSelfUpdateNotice( panel, masterUpdate );
+	}
+
+	async function updateSelf() {
+		const button = document.getElementById( 'art-master-install-update-self' );
+		if ( button && button.disabled ) {
+			return;
+		}
+
+		if ( button ) {
+			button.disabled = true;
+			button.classList.add( 'is-busy' );
+			button.textContent = i18n.updatingSelf || i18n.updating || '';
+		}
+
+		const body = new URLSearchParams();
+		body.set( 'action', config.ajaxAction );
+		body.set( 'nonce', config.nonce );
+		body.set( 'catalog_action', 'update_self' );
+
+		try {
+			const response = await fetch( config.ajaxUrl, {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+				},
+				body: body.toString(),
+			} );
+
+			const data = await response.json();
+
+			if ( ! data || ! data.success ) {
+				const message = data && data.data && data.data.message
+					? data.data.message
+					: ( i18n.selfUpdateError || i18n.genericError );
+				showNotice( message, 'error' );
+
+				if ( button ) {
+					button.disabled = false;
+					button.classList.remove( 'is-busy' );
+					button.textContent = i18n.updateSelf || i18n.update || '';
+				}
+				return;
 			}
 
-			notice.innerHTML = '';
-			notice.appendChild( document.createTextNode( ( i18n.selfUpdateAvailable || '' ) + ' ' ) );
+			if ( data.data && data.data.master_update ) {
+				updateMasterUpdatePanel( data.data.master_update );
+			}
 
-			const link = document.createElement( 'a' );
-			link.href = masterUpdate.updates_url || '#';
-			link.textContent = i18n.goToUpdates || '';
-			notice.appendChild( link );
-		} else if ( notice ) {
-			notice.remove();
+			if ( data.data && data.data.message ) {
+				showNotice( data.data.message, 'success' );
+			}
+
+			if ( data.data && data.data.reload ) {
+				window.setTimeout( function () {
+					window.location.reload();
+				}, 800 );
+				return;
+			}
+
+			if ( button ) {
+				button.disabled = false;
+				button.classList.remove( 'is-busy' );
+				button.textContent = i18n.updateSelf || i18n.update || '';
+			}
+		} catch ( error ) {
+			showNotice( i18n.selfUpdateError || i18n.genericError, 'error' );
+
+			if ( button ) {
+				button.disabled = false;
+				button.classList.remove( 'is-busy' );
+				button.textContent = i18n.updateSelf || i18n.update || '';
+			}
 		}
 	}
 
@@ -446,6 +540,14 @@
 		checkButton.addEventListener( 'click', function ( event ) {
 			event.preventDefault();
 			checkUpdates();
+		} );
+	}
+
+	const selfUpdateButton = document.getElementById( 'art-master-install-update-self' );
+	if ( selfUpdateButton ) {
+		selfUpdateButton.addEventListener( 'click', function ( event ) {
+			event.preventDefault();
+			updateSelf();
 		} );
 	}
 }() );

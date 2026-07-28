@@ -116,9 +116,15 @@ defined( 'ABSPATH' ) || exit;
 			<?php if ( ! empty( $master_update['update_available'] ) ) : ?>
 				<p class="art-master-install-self-update-notice">
 					<?php esc_html_e( 'Доступно обновление ART Master Install.', 'art-master-install' ); ?>
-					<a href="<?php echo esc_url( (string) $master_update['updates_url'] ); ?>">
-						<?php esc_html_e( 'Перейти к обновлениям', 'art-master-install' ); ?>
-					</a>
+					<?php if ( Art_Master_Install_Security::can_update() ) : ?>
+						<button
+							type="button"
+							class="button button-primary art-master-install-self-update-button"
+							id="art-master-install-update-self"
+						>
+							<?php esc_html_e( 'Обновить', 'art-master-install' ); ?>
+						</button>
+					<?php endif; ?>
 				</p>
 			<?php endif; ?>
 		</div>

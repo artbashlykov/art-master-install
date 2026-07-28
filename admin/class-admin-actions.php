@@ -49,6 +49,21 @@ class Art_Master_Install_Admin_Actions {
 			wp_send_json_success( $result );
 		}
 
+		if ( 'update_self' === $catalog_action ) {
+			$result = Art_Master_Install_Updater::update_self();
+
+			if ( is_wp_error( $result ) ) {
+				wp_send_json_error(
+					array(
+						'message' => $result->get_error_message(),
+					),
+					400
+				);
+			}
+
+			wp_send_json_success( $result );
+		}
+
 		if ( ! in_array( $catalog_action, array( 'install', 'update' ), true ) ) {
 			wp_send_json_error(
 				array(

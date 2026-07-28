@@ -77,7 +77,9 @@ class Art_Master_Install_Admin_Menu {
 					/* translators: 1: installed version, 2: latest release version or dash */
 					'selfUpdateStatus' => __( 'Установленная версия: %1$s. Последний релиз: %2$s.', 'art-master-install' ),
 					'selfUpdateAvailable' => __( 'Доступно обновление ART Master Install.', 'art-master-install' ),
-					'goToUpdates'  => __( 'Перейти к обновлениям', 'art-master-install' ),
+					'updateSelf'   => __( 'Обновить', 'art-master-install' ),
+					'updatingSelf' => __( 'Обновляется…', 'art-master-install' ),
+					'selfUpdateError' => __( 'Не удалось обновить ART Master Install.', 'art-master-install' ),
 					'dismissNotice' => __( 'Закрыть уведомление', 'art-master-install' ),
 				),
 			)

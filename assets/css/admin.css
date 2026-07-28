@@ -72,6 +72,11 @@
 	margin-bottom: 0;
 }
 
+.art-master-install-self-update-notice .art-master-install-self-update-button {
+	margin-left: 8px;
+	vertical-align: middle;
+}
+
 .art-master-install-admin .art-master-install-panel > .description {
 	margin-top: 0;
 }

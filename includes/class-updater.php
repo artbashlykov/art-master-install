@@ -13,6 +13,7 @@ defined( 'ABSPATH' ) || exit;
 class Art_Master_Install_Updater {
 
 	const GITHUB_REPO        = 'artbashlykov/art-master-install';
+	const ZIP_NAME           = 'art-master-install.zip';
 	const CHECK_TRANSIENT    = 'art_mi_update_check_at';
 	const CHECK_INTERVAL     = 21600; // 6 hours.
 	const CHECK_INTERVAL_MIN = 900; // 15 minutes.
@@ -192,7 +193,87 @@ class Art_Master_Install_Updater {
 			'installed_version' => $installed_version,
 			'latest_version'    => $latest_version,
 			'update_available'  => $update_available,
+			'can_update'        => Art_Master_Install_Security::can_update(),
 			'updates_url'       => admin_url( 'update-core.php' ),
 		);
+	}
+
+	/**
+	 * Update ART Master Install from the latest GitHub release zip.
+	 *
+	 * @return array<string, mixed>|WP_Error
+	 */
+	public static function update_self() {
+		if ( ! Art_Master_Install_Security::can_update() ) {
+			return new WP_Error(
+				'art_master_install_forbidden',
+				__( 'Недостаточно прав.', 'art-master-install' )
+			);
+		}
+
+		$state = self::get_self_update_state( true );
+
+		if ( empty( $state['update_available'] ) ) {
+			return new WP_Error(
+				'art_master_install_up_to_date',
+				__( 'ART Master Install уже актуален.', 'art-master-install' )
+			);
+		}
+
+		self::load_upgrader_dependencies();
+
+		$skin     = new WP_Ajax_Upgrader_Skin();
+		$upgrader = new Plugin_Upgrader( $skin );
+		$result   = null;
+
+		self::force_check();
+
+		if ( self::has_update_available() ) {
+			$result = $upgrader->upgrade( plugin_basename( ART_MASTER_INSTALL_PLUGIN_FILE ) );
+		} else {
+			$package = Art_Master_Install_Github::get_release_zip_url( self::GITHUB_REPO, self::ZIP_NAME );
+			$result  = $upgrader->install(
+				$package,
+				array(
+					'overwrite_package' => true,
+				)
+			);
+		}
+
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+
+		if ( false === $result || null === $result ) {
+			$messages = method_exists( $skin, 'get_error_messages' ) ? $skin->get_error_messages() : array();
+			$message  = ! empty( $messages )
+				? implode( ' ', $messages )
+				: __( 'Не удалось обновить ART Master Install.', 'art-master-install' );
+
+			return new WP_Error( 'art_master_install_self_update_failed', $message );
+		}
+
+		Art_Master_Install_Github::clear_release_cache( self::GITHUB_REPO );
+		self::force_check();
+
+		return array(
+			'message'       => sprintf(
+				/* translators: %s: new plugin version */
+				__( 'ART Master Install обновлён до версии %s. Страница будет перезагружена.', 'art-master-install' ),
+				(string) $state['latest_version']
+			),
+			'reload'        => true,
+			'master_update' => self::get_self_update_state( false ),
+		);
+	}
+
+	/**
+	 * Load WordPress upgrader dependencies.
+	 */
+	private static function load_upgrader_dependencies() {
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+		require_once ABSPATH . 'wp-admin/includes/class-plugin-upgrader.php';
 	}
 }

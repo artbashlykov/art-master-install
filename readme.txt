@@ -4,7 +4,7 @@ Tags: installer, art, catalog
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.6.5
+Stable tag: 1.6.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -33,6 +33,9 @@ It helps you install and update ART extensions from the ART catalog without manu
 ART Starter, ART Editor, ART LMS, and ART Theme. More ART extensions will be added in future releases.
 
 == Changelog ==
+
+= 1.6.6 =
+* Update ART Master Install from the catalog settings panel (soft page reload after success).
 
 = 1.6.5 =
 * Catalog notices can be dismissed and auto-hide after 5 seconds.
