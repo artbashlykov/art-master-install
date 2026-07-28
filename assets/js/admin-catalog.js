@@ -10,6 +10,7 @@
 	const queue = [];
 	const queuedKeys = new Set();
 	const rowSnapshots = new Map();
+	const noticeHideTimers = new WeakMap();
 	let running = false;
 
 	function queueKey( slug, catalogType ) {
@@ -232,6 +233,25 @@
 		}
 	}
 
+	function dismissNotice( notice ) {
+		if ( ! notice || ! notice.parentNode ) {
+			return;
+		}
+
+		const hideTimer = noticeHideTimers.get( notice );
+		if ( hideTimer ) {
+			clearTimeout( hideTimer );
+			noticeHideTimers.delete( notice );
+		}
+
+		notice.classList.add( 'is-hiding' );
+		window.setTimeout( function () {
+			if ( notice.parentNode ) {
+				notice.remove();
+			}
+		}, 300 );
+	}
+
 	function showNotice( message, type ) {
 		const container = document.getElementById( 'art-master-install-notices' );
 		if ( ! container || ! message ) {
@@ -240,10 +260,34 @@
 
 		const notice = document.createElement( 'div' );
 		notice.className = 'notice notice-' + ( type || 'error' ) + ' is-dismissible inline art-master-install-inline-notice';
+
 		const paragraph = document.createElement( 'p' );
 		paragraph.textContent = message;
 		notice.appendChild( paragraph );
+
+		const button = document.createElement( 'button' );
+		button.type = 'button';
+		button.className = 'notice-dismiss';
+
+		const screenReader = document.createElement( 'span' );
+		screenReader.className = 'screen-reader-text';
+		screenReader.textContent = i18n.dismissNotice || '';
+		button.appendChild( screenReader );
+
+		button.addEventListener( 'click', function ( event ) {
+			event.preventDefault();
+			dismissNotice( notice );
+		} );
+
+		notice.appendChild( button );
 		container.prepend( notice );
+
+		noticeHideTimers.set(
+			notice,
+			window.setTimeout( function () {
+				dismissNotice( notice );
+			}, 5000 )
+		);
 	}
 
 	function enqueue( slug, catalogType, action ) {

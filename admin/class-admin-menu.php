@@ -78,6 +78,7 @@ class Art_Master_Install_Admin_Menu {
 					'selfUpdateStatus' => __( 'Установленная версия: %1$s. Последний релиз: %2$s.', 'art-master-install' ),
 					'selfUpdateAvailable' => __( 'Доступно обновление ART Master Install.', 'art-master-install' ),
 					'goToUpdates'  => __( 'Перейти к обновлениям', 'art-master-install' ),
+					'dismissNotice' => __( 'Закрыть уведомление', 'art-master-install' ),
 				),
 			)
 		);

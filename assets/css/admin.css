@@ -192,6 +192,13 @@
 
 .art-master-install-inline-notice {
 	margin: 0 0 8px;
+	position: relative;
+	opacity: 1;
+	transition: opacity 0.3s ease;
+}
+
+.art-master-install-inline-notice.is-hiding {
+	opacity: 0;
 }
 
 .art-master-install-settings-form .form-table {
