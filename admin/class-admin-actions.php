@@ -46,12 +46,7 @@ class Art_Master_Install_Admin_Actions {
 
 			$result = Art_Master_Install_Catalog_Updates::check_all( true, false );
 
-			wp_send_json_success(
-				array(
-					'message'       => $result['message'],
-					'updates_count' => $result['updates_count'],
-				)
-			);
+			wp_send_json_success( $result );
 		}
 
 		if ( ! in_array( $catalog_action, array( 'install', 'update' ), true ) ) {

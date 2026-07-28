@@ -103,6 +103,10 @@ class Art_Master_Install_Catalog_Updates {
 	public static function check_all( $force_refresh = true, $apply_auto_updates = false ) {
 		self::mark_checked();
 
+		if ( $force_refresh ) {
+			Art_Master_Install_Github::clear_catalog_release_caches();
+		}
+
 		$plugin_result = self::collect_catalog_payload(
 			Art_Master_Install_Catalog::get_all_states( $force_refresh ),
 			Art_Master_Install_Catalog::CATALOG_TYPE,
@@ -120,13 +124,17 @@ class Art_Master_Install_Catalog_Updates {
 		$master_state  = Art_Master_Install_Updater::get_self_update_state( $force_refresh );
 
 		return array(
+			'items'         => $plugin_result['payload_items'],
+			'theme_items'   => $theme_result['payload_items'],
 			'updates_count' => $updates_count,
 			'updated_slugs' => $updated_slugs,
+			'last_checked'  => self::get_last_check_label(),
 			'message'       => self::build_check_message(
 				$plugin_result,
 				$theme_result,
 				$master_state
 			),
+			'master_update' => $master_state,
 		);
 	}
 
@@ -148,11 +156,12 @@ class Art_Master_Install_Catalog_Updates {
 	 * @param array<int, array<string, mixed>> $states Catalog states.
 	 * @param string                           $catalog_type plugin|theme.
 	 * @param bool                             $apply_auto_updates Whether to install available updates.
-	 * @return array{updates_count: int, updated_slugs: array<int, string>}
+	 * @return array{payload_items: array<int, array<string, mixed>>, updates_count: int, updated_slugs: array<int, string>}
 	 */
 	private static function collect_catalog_payload( array $states, $catalog_type, $apply_auto_updates ) {
 		$updates_count = 0;
 		$updated_slugs = array();
+		$payload_items = array();
 
 		foreach ( $states as $state ) {
 			if ( ! empty( $state['update_available'] ) ) {
@@ -173,9 +182,12 @@ class Art_Master_Install_Catalog_Updates {
 					}
 				}
 			}
+
+			$payload_items[] = Art_Master_Install_Catalog_UI::get_client_payload( $state );
 		}
 
 		return array(
+			'payload_items' => $payload_items,
 			'updates_count' => $updates_count,
 			'updated_slugs' => $updated_slugs,
 		);

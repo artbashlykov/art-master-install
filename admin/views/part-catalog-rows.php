@@ -37,9 +37,9 @@ $can_activate       = $is_theme_catalog ? Art_Master_Install_Security::can_switc
 		>
 			<td>
 				<strong><?php echo esc_html( (string) $catalog_item['name'] ); ?></strong>
-				<?php if ( ! empty( $catalog_item['latest_version'] ) ) : ?>
-					<br>
-					<span class="description">
+				<br>
+				<span class="description art-master-install-latest-version">
+					<?php if ( ! empty( $catalog_item['latest_version'] ) ) : ?>
 						<?php
 						printf(
 							/* translators: %s: latest release version */
@@ -47,8 +47,8 @@ $can_activate       = $is_theme_catalog ? Art_Master_Install_Security::can_switc
 							esc_html( (string) $catalog_item['latest_version'] )
 						);
 						?>
-					</span>
-				<?php endif; ?>
+					<?php endif; ?>
+				</span>
 			</td>
 			<td><?php echo esc_html( (string) $catalog_item['description'] ); ?></td>
 			<td class="art-master-install-status-cell">

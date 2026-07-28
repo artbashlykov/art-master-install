@@ -112,15 +112,16 @@ class Art_Master_Install_Github {
 		}
 
 		$cache_key = self::get_cache_key( $github_repo );
+		$cached    = get_site_transient( $cache_key );
+
+		// Never trust cache on forced refresh — object caches can return a stale
+		// value even after delete_site_transient(), which would skip the API call.
+		if ( ! $force_refresh && is_array( $cached ) && self::is_cache_fresh( $cached ) ) {
+			return self::normalize_cached_release( $cached );
+		}
 
 		if ( $force_refresh ) {
 			delete_site_transient( $cache_key );
-		}
-
-		$cached = get_site_transient( $cache_key );
-
-		if ( is_array( $cached ) && self::is_cache_fresh( $cached ) ) {
-			return self::normalize_cached_release( $cached );
 		}
 
 		$response = wp_remote_get(
@@ -156,6 +157,25 @@ class Art_Master_Install_Github {
 		self::store_release_cache( $cache_key, $release, false );
 
 		return $release;
+	}
+
+	/**
+	 * Drop cached release data for every catalog plugin/theme repository.
+	 */
+	public static function clear_catalog_release_caches() {
+		foreach ( Art_Master_Install_Catalog::get_items() as $item ) {
+			if ( ! empty( $item['github'] ) ) {
+				self::clear_release_cache( (string) $item['github'] );
+			}
+		}
+
+		foreach ( Art_Master_Install_Theme_Catalog::get_items() as $item ) {
+			if ( ! empty( $item['github'] ) ) {
+				self::clear_release_cache( (string) $item['github'] );
+			}
+		}
+
+		self::clear_release_cache( Art_Master_Install_Updater::GITHUB_REPO );
 	}
 
 	/**

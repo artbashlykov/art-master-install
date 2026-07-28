@@ -63,16 +63,33 @@ class Art_Master_Install_Catalog_UI {
 	 */
 	public static function get_client_payload( array $item ) {
 		$badge = self::get_status_badge( $item );
+		$type  = self::get_catalog_type( $item );
 
-		return array(
+		$payload = array(
 			'slug'              => (string) $item['slug'],
-			'catalog_type'      => self::get_catalog_type( $item ),
+			'catalog_type'      => $type,
 			'status'            => (string) $item['status'],
 			'installed_version' => (string) $item['installed_version'],
+			'latest_version'    => (string) $item['latest_version'],
+			'update_available'  => ! empty( $item['update_available'] ),
 			'status_class'      => $badge['class'],
 			'status_label'      => $badge['label'],
 			'actions'           => self::get_actions_config( $item ),
 		);
+
+		if ( self::is_theme_item( $item ) ) {
+			$payload['stylesheet'] = isset( $item['stylesheet'] ) ? (string) $item['stylesheet'] : '';
+			if ( ! empty( $payload['actions']['activate'] ) && '' !== $payload['stylesheet'] ) {
+				$payload['activate_url'] = Art_Master_Install_Admin_Actions::get_activate_theme_url( $payload['stylesheet'] );
+			}
+		} else {
+			$payload['plugin_file'] = isset( $item['plugin_file'] ) ? (string) $item['plugin_file'] : '';
+			if ( ! empty( $payload['actions']['activate'] ) && '' !== $payload['plugin_file'] ) {
+				$payload['activate_url'] = Art_Master_Install_Admin_Actions::get_activate_url( $payload['plugin_file'] );
+			}
+		}
+
+		return $payload;
 	}
 
 	/**
